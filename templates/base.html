@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Filmlane Hybrid Recommender{% endblock %}</title>
+  <link rel="shortcut icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v='1.0') }}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body id="top">
+  <header class="header" data-header>
+    <div class="container header-shell">
+      <div class="overlay" data-overlay></div>
+
+      <a href="{{ url_for('home') }}" class="logo">
+        <img src="{{ url_for('static', filename='assets/images/logo.svg') }}" alt="Filmlane logo">
+      </a>
+
+      <nav class="desktop-navbar">
+        <ul class="navbar-list centered-nav">
+          <li><a href="{{ url_for('home') }}" class="navbar-link">Home</a></li>
+          <li><a href="{{ url_for('find_movie') }}" class="navbar-link">Find Movie</a></li>
+        </ul>
+      </nav>
+
+      <div class="header-actions header-auth">
+        {% if current_user %}
+        <a href="{{ url_for('recommendations') }}" class="btn btn-primary">Recommendations</a>
+        <a href="{{ url_for('logout') }}" class="btn btn-primary btn-outline-alt">Logout</a>
+        {% else %}
+        <a href="{{ url_for('login') }}" class="btn btn-primary btn-outline-alt">Giris Yap</a>
+        <a href="{{ url_for('register') }}" class="btn btn-primary">Kayit Ol</a>
+        {% endif %}
+      </div>
+
+      <button class="menu-open-btn" data-menu-open-btn>
+        <ion-icon name="reorder-two"></ion-icon>
+      </button>
+
+      <nav class="navbar mobile-navbar" data-navbar>
+        <div class="navbar-top">
+          <a href="{{ url_for('home') }}" class="logo">
+            <img src="{{ url_for('static', filename='assets/images/logo.svg') }}" alt="Filmlane logo">
+          </a>
+          <button class="menu-close-btn" data-menu-close-btn>
+            <ion-icon name="close-outline"></ion-icon>
+          </button>
+        </div>
+
+        <ul class="navbar-list">
+          <li><a href="{{ url_for('home') }}" class="navbar-link">Home</a></li>
+          <li><a href="{{ url_for('find_movie') }}" class="navbar-link">Find Movie</a></li>
+          <li><a href="{{ url_for('cold_start') }}" class="navbar-link">Cold Start</a></li>
+          <li><a href="{{ url_for('recommendations') }}" class="navbar-link">Recommendations</a></li>
+          {% if current_user %}
+          <li><a href="{{ url_for('logout') }}" class="navbar-link">Logout</a></li>
+          {% else %}
+          <li><a href="{{ url_for('login') }}" class="navbar-link">Login</a></li>
+          <li><a href="{{ url_for('register') }}" class="navbar-link">Register</a></li>
+          {% endif %}
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+      <section class="flash-section">
+        <div class="container">
+          <ul class="flash-list">
+            {% for category, message in messages %}
+            <li class="flash-item flash-{{ category }}">{{ message }}</li>
+            {% endfor %}
+          </ul>
+        </div>
+      </section>
+      {% endif %}
+    {% endwith %}
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="footer-top">
+    <div class="container">
+      <div class="footer-brand-wrapper">
+        <a href="{{ url_for('home') }}" class="logo">
+          <img src="{{ url_for('static', filename='assets/images/logo.svg') }}" alt="Filmlane logo">
+        </a>
+      </div>
+      <p class="copyright">Weighted Hybrid Movie Recommendation System</p>
+    </div>
+  </footer>
+
+  <a href="#top" class="go-top" data-go-top>
+    <ion-icon name="chevron-up"></ion-icon>
+  </a>
+
+  <script type="module" src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js"></script>
+  <script nomodule src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js"></script>
+  <script src="{{ url_for('static', filename='js/script.js', v='1.0') }}"></script>
+</body>
+</html>

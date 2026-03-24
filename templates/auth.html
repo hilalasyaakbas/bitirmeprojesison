@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}{% if mode == "login" %}Login{% else %}Register{% endif %} | Filmlane{% endblock %}
+
+{% block content %}
+<section class="movie-detail auth-section">
+  <div class="container auth-grid">
+    <div class="movie-detail-content">
+      <p class="detail-subtitle">User Access</p>
+      <h1 class="h1 detail-title">
+        {% if mode == "login" %}Hesabina <strong>Giris Yap</strong>{% else %}Yeni <strong>Kayit</strong>{% endif %}
+      </h1>
+      <p class="storyline">
+        Kullanici akisi: Giris/Kayit, 10 film cold start puanlamasi, ardindan agirlikli hibrit oneriler.
+      </p>
+    </div>
+
+    <div class="section-shell">
+      <form method="post" class="custom-form">
+        {% if mode == "register" %}
+        <label class="form-label">Kullanici Adi</label>
+        <input class="input-field" type="text" name="username" required>
+        {% endif %}
+
+        <label class="form-label">E-posta</label>
+        <input class="input-field" type="email" name="email" required>
+
+        <label class="form-label">Sifre</label>
+        <input class="input-field" type="password" name="password" required>
+
+        <button type="submit" class="btn btn-primary">
+          <ion-icon name="{% if mode == 'login' %}log-in{% else %}person-add{% endif %}"></ion-icon>
+          <span>{% if mode == "login" %}Giris Yap{% else %}Kayit Ol{% endif %}</span>
+        </button>
+      </form>
+    </div>
+  </div>
+</section>
+{% endblock %}

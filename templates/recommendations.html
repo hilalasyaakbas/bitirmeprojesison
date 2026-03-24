@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}Recommendations | Filmlane{% endblock %}
+
+{% block content %}
+<section class="top-rated">
+  <div class="container">
+    <p class="section-subtitle">Sizin Icin Sectiklerimiz</p>
+    <h2 class="h2 section-title">Agirlikli Hibrit Oneriler</h2>
+
+    <div class="section-shell metric-shell">
+      <div class="metric-card">
+        <span class="metric-label">Optimal alpha</span>
+        <strong class="metric-value">{{ "%.1f"|format(alpha) }}</strong>
+      </div>
+      <div class="metric-card">
+        <span class="metric-label">Hybrid RMSE</span>
+        <strong class="metric-value">{{ "%.3f"|format(rmse) }}</strong>
+      </div>
+      <div class="metric-card">
+        <span class="metric-label">CF RMSE</span>
+        <strong class="metric-value">{{ "%.3f"|format(cf_rmse) }}</strong>
+      </div>
+      <div class="metric-card">
+        <span class="metric-label">CBF RMSE</span>
+        <strong class="metric-value">{{ "%.3f"|format(cbf_rmse) }}</strong>
+      </div>
+    </div>
+
+    <ul class="movies-list">
+      {% for movie in recommended_movies %}
+      <li>
+        <div class="movie-card">
+          <a href="{{ url_for('movie_detail', movie_id=movie.id) }}">
+            <figure class="card-banner">
+              <img src="{{ movie.poster_url }}" alt="{{ movie.title }} movie poster">
+            </figure>
+          </a>
+
+          <div class="title-wrapper">
+            <a href="{{ url_for('movie_detail', movie_id=movie.id) }}">
+              <h3 class="card-title">{{ movie.title }}</h3>
+            </a>
+            <time datetime="{{ movie.year }}">{{ movie.year }}</time>
+          </div>
+
+          <div class="card-meta">
+            <div class="badge badge-outline">{{ movie.quality }}</div>
+            <div class="duration">
+              <ion-icon name="time-outline"></ion-icon>
+              <time datetime="PT{{ movie.duration }}M">{{ movie.duration }} min</time>
+            </div>
+            <div class="rating">
+              <ion-icon name="star"></ion-icon>
+              <data>{{ "%.2f"|format(movie.hybrid_score) }}</data>
+            </div>
+          </div>
+        </div>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+</section>
+{% endblock %}

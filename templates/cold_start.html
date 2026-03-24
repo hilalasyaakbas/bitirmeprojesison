@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}Cold Start | Filmlane{% endblock %}
+
+{% block content %}
+<section class="top-rated cold-start-section">
+  <div class="container">
+    <p class="section-subtitle">Cold Start</p>
+    <h2 class="h2 section-title">10 Filme Ulasacak Sekilde Puanlama Yap</h2>
+
+    <div class="section-shell filter-shell">
+      <p class="storyline">Tamamlanan puanlama: {{ rated_count }}/10. Istersen ture, yila veya IMDb puanina gore filtreleyebilirsin.</p>
+      <form method="get" class="filter-form">
+        <input class="input-field" type="text" name="q" value="{{ request.args.get('q', '') }}" placeholder="Film adi ara">
+        <select class="input-field" name="genre">
+          <option value="">Tur Sec</option>
+          {% for genre in genres %}
+          <option value="{{ genre }}" {% if request.args.get('genre') == genre %}selected{% endif %}>{{ genre }}</option>
+          {% endfor %}
+        </select>
+        <input class="input-field" type="number" name="year_min" value="{{ request.args.get('year_min', '') }}" placeholder="Min Yil">
+        <input class="input-field" type="number" name="year_max" value="{{ request.args.get('year_max', '') }}" placeholder="Max Yil">
+        <input class="input-field" type="number" step="0.1" min="0" max="10" name="imdb_min" value="{{ request.args.get('imdb_min', '') }}" placeholder="Min IMDb">
+        <button type="submit" class="btn btn-primary">Filtrele</button>
+      </form>
+    </div>
+
+    <div class="section-shell">
+      <form method="post">
+        <ul class="movies-list rating-grid">
+          {% for movie in movies %}
+          <li>
+            <div class="movie-card">
+              <a href="{{ url_for('movie_detail', movie_id=movie.id) }}">
+                <figure class="card-banner">
+                  <img src="{{ movie.poster_url }}" alt="{{ movie.title }} poster">
+                </figure>
+              </a>
+              <div class="title-wrapper">
+                <a href="{{ url_for('movie_detail', movie_id=movie.id) }}">
+                  <h3 class="card-title">{{ movie.title }}</h3>
+                </a>
+                <time datetime="{{ movie.year }}">{{ movie.year }}</time>
+              </div>
+              <div class="card-meta">
+                <div class="badge badge-outline">{{ movie.quality }}</div>
+                <div class="rating">
+                  <ion-icon name="star"></ion-icon>
+                  <data>{{ "%.1f"|format(movie.imdb_rating or 0) }}</data>
+                </div>
+              </div>
+              <label class="form-label">Puan</label>
+              <select class="input-field" name="rating_{{ movie.id }}">
+                <option value="">Sec</option>
+                {% for score in [1, 2, 3, 4, 5] %}
+                <option value="{{ score }}" {% if existing_ratings.get(movie.id) == score %}selected{% endif %}>{{ score }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </li>
+          {% endfor %}
+        </ul>
+        <button type="submit" class="btn btn-primary centered-action">
+          <ion-icon name="save"></ion-icon>
+          <span>Puanlari Kaydet</span>
+        </button>
+      </form>
+    </div>
+  </div>
+</section>
+{% endblock %}

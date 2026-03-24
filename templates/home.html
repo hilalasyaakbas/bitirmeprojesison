@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block title %}Filmlane | Home{% endblock %}
+
+{% block content %}
+<section class="hero hero-home">
+  <div class="container hero-home-shell">
+    <div class="hero-content">
+      <p class="hero-subtitle">Movie Discovery Platform</p>
+      <h1 class="h1 hero-title">Filmlane <strong>Movie Recommender</strong></h1>
+      <p class="hero-text">
+        Aradigin filmi bul, puanla ve hibrit sistemin sana ozel onerilerini kesfet.
+      </p>
+      <form action="{{ url_for('find_movie') }}" method="get" class="hero-search-form">
+        <input class="input-field" type="text" name="q" placeholder="Film ara: Interstellar, Parasite..." required>
+        <button type="submit" class="btn btn-primary">Find Movie</button>
+      </form>
+    </div>
+
+    <div class="poster-wall">
+      {% for movie in featured_movies %}
+      <a href="{{ url_for('movie_detail', movie_id=movie.id) }}" class="poster-tile">
+        <img src="{{ movie.poster_url }}" alt="{{ movie.title }} poster">
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endblock %}
