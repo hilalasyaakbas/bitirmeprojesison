@@ -1,64 +1,68 @@
+<!DOCTYPE html>
 {% extends "base.html" %}
 
-{% block title %}Recommendations | Filmlane{% endblock %}
+{% block title %} Movie Sage | Sizin İçin Öneriler {% endblock %}
 
 {% block content %}
-<section class="top-rated">
-  <div class="container">
-    <p class="section-subtitle">Sizin Icin Sectiklerimiz</p>
-    <h2 class="h2 section-title">Agirlikli Hibrit Oneriler</h2>
-
-    <div class="section-shell metric-shell">
-      <div class="metric-card">
-        <span class="metric-label">Optimal alpha</span>
-        <strong class="metric-value">{{ "%.1f"|format(alpha) }}</strong>
-      </div>
-      <div class="metric-card">
-        <span class="metric-label">Hybrid RMSE</span>
-        <strong class="metric-value">{{ "%.3f"|format(rmse) }}</strong>
-      </div>
-      <div class="metric-card">
-        <span class="metric-label">CF RMSE</span>
-        <strong class="metric-value">{{ "%.3f"|format(cf_rmse) }}</strong>
-      </div>
-      <div class="metric-card">
-        <span class="metric-label">CBF RMSE</span>
-        <strong class="metric-value">{{ "%.3f"|format(cbf_rmse) }}</strong>
+<section class="hero hero-home" style="background: none;">
+  <div class="container hero-home-shell">
+    <div class="hero-content">
+      <p class="hero-subtitle">Hibrit Öneri Analizi Tamamlandı</p>
+      <h1 class="h1 hero-title">Size Özel <strong>Film Önerileri</strong></h1>
+      <p class="hero-text">
+        Puanladığınız filmler ve zevkleriniz analiz edildi. İşte <strong>Movie Sage</strong> hibrit sisteminin sizin için seçtiği en uyumlu sonuçlar.
+      </p>
+      
+      <div class="meta-wrapper" style="margin-top: 20px;">
+        <div class="badge badge-outline">Hybrid Mode: ON</div>
+        <div class="badge badge-outline">Precision: High</div>
       </div>
     </div>
 
-    <ul class="movies-list">
-      {% for movie in recommended_movies %}
-      <li>
-        <div class="movie-card">
-          <a href="{{ url_for('movie_detail', movie_id=movie.id) }}">
-            <figure class="card-banner">
-              <img src="{{ movie.poster_url }}" alt="{{ movie.title }} movie poster">
-            </figure>
-          </a>
-
-          <div class="title-wrapper">
-            <a href="{{ url_for('movie_detail', movie_id=movie.id) }}">
-              <h3 class="card-title">{{ movie.title }}</h3>
-            </a>
-            <time datetime="{{ movie.year }}">{{ movie.year }}</time>
+    <div class="poster-wall">
+      {% if recommended_movies %}
+        {% for movie in recommended_movies %}
+        <a href="{{ url_for('movie_detail', movie_id=movie.id) }}" class="poster-tile">
+          <img src="{{ movie.poster_url }}" alt="{{ movie.title }} poster">
+          <div class="poster-content" style="padding: 10px; background: rgba(0,0,0,0.5);">
+            <p style="font-size: 14px; color: var(--citrine);">{{ movie.title }}</p>
           </div>
-
-          <div class="card-meta">
-            <div class="badge badge-outline">{{ movie.quality }}</div>
-            <div class="duration">
-              <ion-icon name="time-outline"></ion-icon>
-              <time datetime="PT{{ movie.duration }}M">{{ movie.duration }} min</time>
-            </div>
-            <div class="rating">
-              <ion-icon name="star"></ion-icon>
-              <data>{{ "%.2f"|format(movie.hybrid_score) }}</data>
-            </div>
-          </div>
+        </a>
+        {% endfor %}
+      {% else %}
+        <div class="hero-content">
+            <p class="hero-text">Henüz yeterli veri toplanamadı. Lütfen daha fazla film puanlayın.</p>
+            <a href="{{ url_for('on_degerlendirme_puanlamasi') }}" class="btn btn-primary">Puanlamaya Dön</a>
         </div>
-      </li>
-      {% endfor %}
-    </ul>
+      {% endif %}
+    </div>
   </div>
+</section>
+
+<section class="top-rated" style="padding-bottom: 100px;">
+    <div class="container">
+        <p class="section-subtitle">Online Streaming</p>
+        <h2 class="h2 section-title">İlginizi Çekebilecek Diğerleri</h2>
+        
+        <ul class="movies-list">
+            {% for movie in recommended_movies[4:] %} {# Listenin geri kalanını burada listeleyebiliriz #}
+            <li>
+                <div class="movie-card">
+                    <a href="{{ url_for('movie_detail', movie_id=movie.id) }}">
+                        <figure class="card-banner">
+                            <img src="{{ movie.poster_url }}" alt="{{ movie.title }}">
+                        </figure>
+                    </a>
+                    <div class="title-wrapper">
+                        <a href="{{ url_for('movie_detail', movie_id=movie.id) }}">
+                            <h3 class="card-title">{{ movie.title }}</h3>
+                        </a>
+                        <time datetime="{{ movie.year }}">{{ movie.year }}</time>
+                    </div>
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
 </section>
 {% endblock %}

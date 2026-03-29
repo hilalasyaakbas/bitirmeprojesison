@@ -1,39 +1,42 @@
+
+<!DOCTYPE html>
 {% extends "base.html" %}
 
-{% block title %}{% if mode == "login" %}Login{% else %}Register{% endif %} | Filmlane{% endblock %}
+{% block title %}{% if mode == "login" %}Giriş{% else %}Kayıt{% endif %} | Movie Sage{% endblock %}
 
 {% block content %}
-<section class="movie-detail auth-section">
-  <div class="container auth-grid">
-    <div class="movie-detail-content">
-      <p class="detail-subtitle">User Access</p>
-      <h1 class="h1 detail-title">
-        {% if mode == "login" %}Hesabina <strong>Giris Yap</strong>{% else %}Yeni <strong>Kayit</strong>{% endif %}
+<section class="movie-detail auth-section" style="padding-top: 150px; min-height: 100vh; background: rgba(0,0,0,0.8);">
+  <div class="container" style="max-width: 1000px; display: flex; align-items: center; gap: 50px;">
+    
+    <div class="movie-detail-content" style="flex: 1;">
+      <p class="detail-subtitle" style="color: #ffffff; text-shadow: 2px 2px 4px #000;">User Access</p>
+      <h1 class="h1 detail-title" style="color: #ffffff; text-shadow: 3px 3px 6px #000;">
+        {% if mode == "login" %}Hesabına <br><strong>Giriş Yap</strong>{% else %}Yeni Bir <br><strong>Kayıt Oluştur</strong>{% endif %}
       </h1>
-      <p class="storyline">
-        Kullanici akisi: Giris/Kayit, 10 film cold start puanlamasi, ardindan agirlikli hibrit oneriler.
+      <p class="storyline" style="color: #ccc; margin-top: 20px;">
+        Film dünyasına adım at. Puanlamalarını yap ve sana özel hibrit önerileri keşfet.
       </p>
     </div>
 
-    <div class="section-shell">
+    <div class="section-shell" style="flex: 1; background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(15px); padding: 40px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1);">
       <form method="post" class="custom-form">
         {% if mode == "register" %}
-        <label class="form-label">Kullanici Adi</label>
-        <input class="input-field" type="text" name="username" required>
+        <label class="form-label" style="color: white;">Kullanıcı Adı</label>
+        <input class="input-field" type="text" name="username" placeholder="Adın..." required style="margin-bottom: 15px;">
         {% endif %}
 
-        <label class="form-label">E-posta</label>
-        <input class="input-field" type="email" name="email" required>
+        <label class="form-label" style="color: white;">E-posta</label>
+        <input class="input-field" type="email" name="email" placeholder="mail@adres.com" required style="margin-bottom: 15px;">
 
-        <label class="form-label">Sifre</label>
-        <input class="input-field" type="password" name="password" required>
+        <label class="form-label" style="color: white;">Şifre</label>
+        <input class="input-field" type="password" name="password" placeholder="••••••" required style="margin-bottom: 25px;">
 
-        <button type="submit" class="btn btn-primary">
-          <ion-icon name="{% if mode == 'login' %}log-in{% else %}person-add{% endif %}"></ion-icon>
-          <span>{% if mode == "login" %}Giris Yap{% else %}Kayit Ol{% endif %}</span>
+        <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; height: 50px;">
+          <span>{% if mode == "login" %}GİRİŞ YAP{% else %}KAYIT OL{% endif %}</span>
         </button>
       </form>
     </div>
+
   </div>
 </section>
 {% endblock %}

@@ -4,9 +4,9 @@
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{% block title %}Filmlane Hybrid Recommender{% endblock %}</title>
+  <title>{% block title %}Movie Sage Hybrid Recommender{% endblock %}</title>
   <link rel="shortcut icon" href="/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v='1.0') }}">
+ <link rel="stylesheet" href="../assets/css/style.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -17,7 +17,7 @@
       <div class="overlay" data-overlay></div>
 
       <a href="{{ url_for('home') }}" class="logo">
-        <img src="{{ url_for('static', filename='assets/images/logo.svg') }}" alt="Filmlane logo">
+        <img src="../assets/images/logo.svg" alt="Movie Sage logo">
       </a>
 
       <nav class="desktop-navbar">
@@ -29,11 +29,11 @@
 
       <div class="header-actions header-auth">
         {% if current_user %}
-        <a href="{{ url_for('recommendations') }}" class="btn btn-primary">Recommendations</a>
+        <a href="{{ url_for('on_degerlendirme_puanlamasi') }}" class="btn btn-primary">Recommendations</a>
         <a href="{{ url_for('logout') }}" class="btn btn-primary btn-outline-alt">Logout</a>
         {% else %}
-        <a href="{{ url_for('login') }}" class="btn btn-primary btn-outline-alt">Giris Yap</a>
-        <a href="{{ url_for('register') }}" class="btn btn-primary">Kayit Ol</a>
+        <a href="{{ url_for('kullanici_girisi') }}" class="btn btn-primary btn-outline-alt">Giris Yap</a>
+        <a href="{{ url_for('kullanici_kaydi') }}" class="btn btn-primary">Kayit Ol</a>
         {% endif %}
       </div>
 
@@ -44,7 +44,7 @@
       <nav class="navbar mobile-navbar" data-navbar>
         <div class="navbar-top">
           <a href="{{ url_for('home') }}" class="logo">
-            <img src="{{ url_for('static', filename='assets/images/logo.svg') }}" alt="Filmlane logo">
+            <img src="{{ url_for('static', filename='assets/images/logo.svg') }}" alt="Movie Sage logo">
           </a>
           <button class="menu-close-btn" data-menu-close-btn>
             <ion-icon name="close-outline"></ion-icon>
@@ -54,13 +54,13 @@
         <ul class="navbar-list">
           <li><a href="{{ url_for('home') }}" class="navbar-link">Home</a></li>
           <li><a href="{{ url_for('find_movie') }}" class="navbar-link">Find Movie</a></li>
-          <li><a href="{{ url_for('cold_start') }}" class="navbar-link">Cold Start</a></li>
-          <li><a href="{{ url_for('recommendations') }}" class="navbar-link">Recommendations</a></li>
+          <li><a href="{{ url_for('on_degerlendirme_puanlamasi') }}" class="navbar-link">Cold Start</a></li>
+          <li><a href="{{ url_for('kisisel_film_onerileri') }}" class="navbar-link">Recommendations</a></li>
           {% if current_user %}
           <li><a href="{{ url_for('logout') }}" class="navbar-link">Logout</a></li>
           {% else %}
-          <li><a href="{{ url_for('login') }}" class="navbar-link">Login</a></li>
-          <li><a href="{{ url_for('register') }}" class="navbar-link">Register</a></li>
+          <li><a href="{{ url_for('kullanici_girisi') }}" class="navbar-link">Login</a></li>
+          <li><a href="{{ url_for('kullanici_kaydi') }}" class="navbar-link">Register</a></li>
           {% endif %}
         </ul>
       </nav>
@@ -88,7 +88,7 @@
     <div class="container">
       <div class="footer-brand-wrapper">
         <a href="{{ url_for('home') }}" class="logo">
-          <img src="{{ url_for('static', filename='assets/images/logo.svg') }}" alt="Filmlane logo">
+          <img src="../assets/images/logo.svg" alt="Movie Sage logo">
         </a>
       </div>
       <p class="copyright">Weighted Hybrid Movie Recommendation System</p>
@@ -101,6 +101,6 @@
 
   <script type="module" src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js"></script>
   <script nomodule src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js"></script>
-  <script src="{{ url_for('static', filename='js/script.js', v='1.0') }}"></script>
+  <script src="../assets/js/script.js"></script>
 </body>
 </html>

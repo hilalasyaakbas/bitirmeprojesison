@@ -1,16 +1,19 @@
+
+<!DOCTYPE html>
 {% extends "base.html" %}
 
-{% block title %}Find Movie | Filmlane{% endblock %}
+{% block title %}Find Movie | Movie Sage{% endblock %}
 
 {% block content %}
-<section class="top-rated search-section">
+<section class="top-rated search-section" style="padding-top: 140px;">
   <div class="container">
-    <p class="section-subtitle">Search</p>
-    <h2 class="h2 section-title">Film Bul ve Puanla</h2>
-    <div class="section-shell">
-      <form method="get" class="hero-search-form search-wide">
-        <input class="input-field" type="text" name="q" value="{{ query }}" placeholder="Film adi yaz">
-        <button type="submit" class="btn btn-primary">Ara</button>
+    <p class="hero-subtitle" style="text-align: center;">Discovery</p>
+    <h2 class="h2 section-title" style="margin-bottom: 30px;">Film Bul ve Puanla</h2>
+    
+    <div class="section-shell" style="background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px); border-radius: 20px; padding: 20px; margin-bottom: 50px;">
+      <form method="get" class="hero-search-form search-wide" style="display: flex; gap: 10px;">
+        <input class="input-field" type="text" name="q" value="{{ query or '' }}" placeholder="Film adı yaz..." style="flex: 1; background: rgba(0,0,0,0.3); color: white;">
+        <button type="submit" class="btn btn-primary">ARA</button>
       </form>
     </div>
 
@@ -19,8 +22,8 @@
       <li>
         <div class="movie-card">
           <a href="{{ url_for('movie_detail', movie_id=movie.id) }}">
-            <figure class="card-banner">
-              <img src="{{ movie.poster_url }}" alt="{{ movie.title }} poster">
+            <figure class="card-banner" style="border-radius: 15px; overflow: hidden;">
+              <img src="{{ movie.poster_url }}" alt="{{ movie.title }} poster" onerror="this.src='/assets/images/movie-1.png'">
             </figure>
           </a>
           <div class="title-wrapper">
@@ -29,27 +32,33 @@
             </a>
             <time datetime="{{ movie.year }}">{{ movie.year }}</time>
           </div>
+          
           <div class="card-meta">
-            <div class="badge badge-outline">{{ movie.quality }}</div>
+            <div class="badge badge-outline">HD</div>
             <div class="rating">
-              <ion-icon name="star"></ion-icon>
+              <ion-icon name="star" style="color: gold;"></ion-icon>
               <data>{{ "%.1f"|format(movie.imdb_rating or 0) }}</data>
             </div>
           </div>
+
           {% if current_user %}
-          <form method="post" action="{{ url_for('rate_movie', movie_id=movie.id) }}" class="custom-form search-card-form">
+          <form method="post" action="{{ url_for('rate_movie', movie_id=movie.id) }}" class="custom-form search-card-form" style="margin-top: 15px;">
             <input type="hidden" name="next_url" value="{{ request.url }}">
-            <select class="input-field" name="score" required>
-              <option value="">Puan Sec</option>
-              {% for score in [1, 2, 3, 4, 5] %}
-              <option value="{{ score }}" {% if user_ratings.get(movie.id) == score %}selected{% endif %}>{{ score }}</option>
-              {% endfor %}
-            </select>
-            <button type="submit" class="btn btn-primary">Puanla</button>
+            <div style="display: flex; gap: 5px;">
+                <select class="input-field" name="score" required style="padding: 5px; font-size: 12px;">
+                  <option value="">Puan</option>
+                  {% for score in range(1, 11) %}
+                  <option value="{{ score }}" {% if user_ratings and user_ratings.get(movie.id) == score %}selected{% endif %}>{{ score }}</option>
+                  {% endfor %}
+                </select>
+                <button type="submit" class="btn btn-primary" style="padding: 5px 15px; font-size: 12px;">OK</button>
+            </div>
           </form>
           {% endif %}
         </div>
       </li>
+      {% else %}
+        <p style="color: white; text-align: center; width: 100%;">Henüz film bulunamadı.</p>
       {% endfor %}
     </ul>
   </div>

@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 {% extends "base.html" %}
 
 {% block title %}{{ movie.title }} | Filmlane{% endblock %}
@@ -7,7 +8,7 @@
   <div class="container">
     <figure class="movie-detail-banner">
       <img src="{{ imdb_data.image if imdb_data and imdb_data.image else movie.poster_url }}" alt="{{ movie.title }} movie poster">
-      <a href="{{ imdb_data.imdb_url if imdb_data and imdb_data.imdb_url else movie.imdb_url or '#' }}" class="play-btn" target="_blank" rel="noreferrer">
+      <a href="{{ movie.imdb_url or '#' }}" class="play-btn" target="_blank" rel="noreferrer">
         <ion-icon name="open-outline"></ion-icon>
       </a>
     </figure>
@@ -18,11 +19,11 @@
 
       <div class="meta-wrapper">
         <div class="badge-wrapper">
-          <div class="badge badge-fill">IMDb {{ "%.1f"|format((imdb_data.imdb_rating if imdb_data and imdb_data.imdb_rating else movie.imdb_rating) or 0) }}</div>
+          <div class="badge badge-fill">IMDb {{ "%.1f"|format(movie.imdb_rating or 0) }}</div>
           <div class="badge badge-outline">{{ movie.quality }}</div>
         </div>
         <div class="ganre-wrapper">
-          {% set genre_list = imdb_data.genres if imdb_data and imdb_data.genres else movie.genres.split() %}
+          {% set genre_list = movie.genres.split() %}
           {% for genre in genre_list %}
           <a href="#">{{ genre }}</a>
           {% endfor %}
@@ -34,12 +35,12 @@
           </div>
           <div>
             <ion-icon name="time-outline"></ion-icon>
-            <time datetime="PT{{ (imdb_data.duration if imdb_data and imdb_data.duration else movie.duration) }}M">{{ imdb_data.duration if imdb_data and imdb_data.duration else movie.duration }} min</time>
+            <time datetime="PT{{ movie.duration }}M">{{ movie.duration }} min</time>
           </div>
         </div>
       </div>
 
-      <p class="storyline">{{ imdb_data.description if imdb_data and imdb_data.description else movie.description }}</p>
+      <p class="storyline">{{ movie.description }}</p>
 
       <div class="details-actions details-grid">
         <div class="title-wrapper">
@@ -50,13 +51,15 @@
           <p class="title">Senin Puanin</p>
           <p class="text">{{ user_rating if user_rating else "Henuz puan yok" }}</p>
         </div>
+        
         <div class="title-wrapper">
           <p class="title">Yonetmen</p>
-          <p class="text">{{ imdb_data.directors|join(', ') if imdb_data and imdb_data.directors else "IMDb verisi bekleniyor" }}</p>
+          <p class="text">{{ movie.director if movie.director else "IMDb verisi bekleniyor" }}</p>
         </div>
+        
         <div class="title-wrapper">
           <p class="title">Oyuncular</p>
-          <p class="text">{{ imdb_data.actors[:3]|join(', ') if imdb_data and imdb_data.actors else "IMDb verisi bekleniyor" }}</p>
+          <p class="text">{{ movie.cast if movie.cast else "IMDb verisi bekleniyor" }}</p>
         </div>
       </div>
 
@@ -79,8 +82,8 @@
       </div>
       {% endif %}
 
-      {% if imdb_data and imdb_data.imdb_url %}
-      <a href="{{ imdb_data.imdb_url }}" target="_blank" rel="noreferrer" class="download-btn">
+      {% if movie.imdb_url %}
+      <a href="{{ movie.imdb_url }}" target="_blank" rel="noreferrer" class="download-btn">
         <span>IMDb Sayfasini Ac</span>
         <ion-icon name="open-outline"></ion-icon>
       </a>
