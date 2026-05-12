@@ -1,65 +1,83 @@
-<!DOCTYPE html>
 {% extends "base.html" %}
 
-{% block title %}{{ movie.title }} | Filmlane{% endblock %}
+{% block title %}{{ movie.title }} | Movie Sage{% endblock %}
 
 {% block content %}
 <section class="movie-detail">
   <div class="container">
     <figure class="movie-detail-banner">
-      <img src="{{ imdb_data.image if imdb_data and imdb_data.image else movie.poster_url }}" alt="{{ movie.title }} movie poster">
+      <img
+      src="{{ movie.poster_url if movie.poster_url else '/assets/images/genel.png' }}"
+      alt="{{ movie.title }} movie poster"
+      onerror="this.onerror=null; this.src='/assets/images/genel.png';"
+    >
       <a href="{{ movie.imdb_url or '#' }}" class="play-btn" target="_blank" rel="noreferrer">
         <ion-icon name="open-outline"></ion-icon>
       </a>
     </figure>
 
     <div class="movie-detail-content">
-      <p class="detail-subtitle">IMDb Enriched Detail</p>
-      <h1 class="h1 detail-title">{{ movie.title }} <strong>{{ movie.year }}</strong></h1>
-
+      <p class="detail-subtitle">Metadata Enriched Detail</p>
+      <h1 class="h1 detail-title">{{ movie.title }} <strong>{{ movie.year }}</strong></h1><h1 class="h1 detail-title">
+        {% if movie.year %}
+        <strong>{{ movie.year }}</strong>
+        {% endif %}
+      </h1>
       <div class="meta-wrapper">
         <div class="badge-wrapper">
-          <div class="badge badge-fill">IMDb {{ "%.1f"|format(movie.imdb_rating or 0) }}</div>
+          <div class="badge badge-fill">Rating {{ "%.1f"|format(movie.imdb_rating or 0) }}</div>
+          {% if movie.quality %}
           <div class="badge badge-outline">{{ movie.quality }}</div>
+          {% endif %}
         </div>
+
         <div class="ganre-wrapper">
-          {% set genre_list = movie.genres.split() %}
-          {% for genre in genre_list %}
-          <a href="#">{{ genre }}</a>
-          {% endfor %}
+          {% if movie.genres %}
+            {% set genre_list = movie.genres.split() %}
+            {% for genre in genre_list %}
+            <a href="#">{{ genre }}</a>
+            {% endfor %}
+          {% endif %}
         </div>
+
         <div class="date-time">
+          {% if movie.year %}
           <div>
             <ion-icon name="calendar-outline"></ion-icon>
             <time datetime="{{ movie.year }}">{{ movie.year }}</time>
           </div>
+          {% endif %}
+
+          {% if movie.duration %}
           <div>
             <ion-icon name="time-outline"></ion-icon>
             <time datetime="PT{{ movie.duration }}M">{{ movie.duration }} min</time>
           </div>
+          {% endif %}
         </div>
       </div>
 
-      <p class="storyline">{{ movie.description }}</p>
+      <p class="storyline">{{ movie.description or "Bu film için açıklama bilgisi henüz bulunmuyor." }}</p>
 
       <div class="details-actions details-grid">
         <div class="title-wrapper">
           <p class="title">Toplam Oylama</p>
           <p class="text">{{ stats.rating_count }} puan</p>
         </div>
+
         <div class="title-wrapper">
-          <p class="title">Senin Puanin</p>
-          <p class="text">{{ user_rating if user_rating else "Henuz puan yok" }}</p>
+          <p class="title">Senin Puanın</p>
+          <p class="text">{{ user_rating if user_rating else "Henüz puan yok" }}</p>
         </div>
         
         <div class="title-wrapper">
-          <p class="title">Yonetmen</p>
-          <p class="text">{{ movie.director if movie.director else "IMDb verisi bekleniyor" }}</p>
+          <p class="title">Yönetmen</p>
+          <p class="text">{{ movie.director if movie.director else "Metadata verisi bekleniyor" }}</p>
         </div>
         
         <div class="title-wrapper">
           <p class="title">Oyuncular</p>
-          <p class="text">{{ movie.cast if movie.cast else "IMDb verisi bekleniyor" }}</p>
+          <p class="text">{{ movie.cast if movie.cast else "Metadata verisi bekleniyor" }}</p>
         </div>
       </div>
 
@@ -68,15 +86,17 @@
         <form method="post" class="custom-form inline-rating-form">
           <input type="hidden" name="next_url" value="{{ request.url }}">
           <label class="form-label">Filmi puanla</label>
+
           <select class="input-field" name="score" required>
-            <option value="">Puan Sec</option>
-            {% for score in [1, 2, 3, 4, 5] %}
+            <option value="">Puan Seç</option>
+            {% for score in range(1, 11) %}
             <option value="{{ score }}" {% if user_rating == score %}selected{% endif %}>{{ score }}</option>
             {% endfor %}
           </select>
+
           <button type="submit" class="btn btn-primary">
             <ion-icon name="star"></ion-icon>
-            <span>Puani Kaydet</span>
+            <span>Puanı Kaydet</span>
           </button>
         </form>
       </div>
@@ -84,7 +104,7 @@
 
       {% if movie.imdb_url %}
       <a href="{{ movie.imdb_url }}" target="_blank" rel="noreferrer" class="download-btn">
-        <span>IMDb Sayfasini Ac</span>
+        <span>Film Sayfasını Aç</span>
         <ion-icon name="open-outline"></ion-icon>
       </a>
       {% endif %}
@@ -95,7 +115,8 @@
 <section class="tv-series">
   <div class="container">
     <p class="section-subtitle">Benzer Filmler</p>
-    <h2 class="h2 section-title">Sana Uygun Diger Basliklar</h2>
+    <h2 class="h2 section-title">Sana Uygun Diğer Başlıklar</h2>
+
     <ul class="movies-list">
       {% for similar_movie in similar_movies %}
       <li>
@@ -105,14 +126,22 @@
               <img src="{{ similar_movie.poster_url }}" alt="{{ similar_movie.title }} poster">
             </figure>
           </a>
+
           <div class="title-wrapper">
             <a href="{{ url_for('movie_detail', movie_id=similar_movie.id) }}">
               <h3 class="card-title">{{ similar_movie.title }}</h3>
             </a>
+
+            {% if similar_movie.year %}
             <time datetime="{{ similar_movie.year }}">{{ similar_movie.year }}</time>
+            {% endif %}
           </div>
+
           <div class="card-meta">
+            {% if similar_movie.quality %}
             <div class="badge badge-outline">{{ similar_movie.quality }}</div>
+            {% endif %}
+
             <div class="rating">
               <ion-icon name="star"></ion-icon>
               <data>{{ "%.1f"|format(similar_movie.imdb_rating or 0) }}</data>

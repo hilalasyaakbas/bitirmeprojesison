@@ -1,119 +1,26 @@
 import os
-from sqlalchemy import or_, text
-from flask import Flask, flash, g, redirect, render_template, request, send_from_directory, session, url_for
+from sqlalchemy import or_, text, func # func eklendi
+from flask import Flask, flash, g, redirect, render_template, request, session, url_for
 from werkzeug.security import check_password_hash, generate_password_hash
 
 # Raporundaki API Gateway ve Recommender modülleri
-from imdb_service import fetch_imdb_movie_data
 from models import Movie, Rating, User, db
 from recommender import HybridRecommender
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 
-# Orijinal MOVIE_SEEDS listen (Aynen korundu) 
-MOVIE_SEEDS = [
-    {
-        "title": "Inception",
-        "year": 2010,
-        "quality": "HD",
-        "duration": 148,
-        "poster_url": "/assets/images/movie-1.png",
-        "description": "Rüyalar içinde rüya görerek bilinçaltına fikir yerleştirme operasyonu.",
-        "genres": "Science Fiction Action",
-        "imdb_rating": 8.8,
-        "imdb_url": "https://www.imdb.com/title/tt1375666/",
-    },
-    {
-        "title": "The Shawshank Redemption",
-        "year": 1994,
-        "quality": "HD",
-        "duration": 142,
-        "poster_url": "/assets/images/movie-2.png",
-        "description": "Haksız yere ömür boyu hapse mahkum edilen bir adamın, Shawshank Hapishanesi'nde yaşadığı dostluk ve umut dolu hikayesi.",
-        "genres": "Drama",
-        "imdb_rating": 9.3,
-        "imdb_url": "https://www.imdb.com/title/tt0111161/",
-    },
-    {
-        "title": "The Dark Knight",
-        "year": 2008,
-        "quality": "HD",                    
-        "duration": 152,
-        "poster_url": "/assets/images/movie-3.png",
-        "description": "Batman, Gotham şehrini terörist Joker'den korumaya çalışırken, adalet ve kaos arasındaki ince çizgide mücadele eder.",
-        "genres": "Action Crime Drama",
-        "imdb_rating": 9.0,
-        "imdb_url": "https://www.imdb.com/title/tt0468569/",
-    },
-    {
-        "title": "Cinderella",
-        "year": 2015,
-        "quality": "4K Ultra HD",
-        "duration": 105,
-        "poster_url": "/assets/images/cinderella.png",
-        "description": "Genç Ella'nın, üvey annesi ve kız kardeşlerinin eziyetlerine rağmen nezaketini koruyarak bir baloda hayatının değişmesini konu alan büyülü bir masal.",
-        "genres": "Fantasy Family Romance",
-        "imdb_rating": 6.9,
-        "imdb_url": "https://www.imdb.com/title/tt1661199/",
-    },
-    {
-        "title": "Maleficent",
-        "year": 2014,
-        "quality": "Full HD",
-        "duration": 97,
-        "poster_url": "/assets/images/maleficent.png",
-        "description": "Uyuyan Güzel masalına ikonik kötü karakter Malefiz'in gözünden bakan, ihanet ve sevgi üzerine kurulu etkileyici bir hikaye.",
-        "genres": "Action Adventure Family Fantasy",
-        "imdb_rating": 6.9,
-        "imdb_url": "https://www.imdb.com/title/tt1587310/",
-    },
-    {
-        "title": "Beauty and the Beast",
-        "year": 2017,
-        "quality": "HD",
-        "duration": 129,
-        "poster_url": "/assets/images/beauty_beast.png",
-        "description": "Genç ve zeki Belle'in, babasını kurtarmak için bir canavarın kalesinde hapis kalmasıyla başlayan ve içsel güzelliği keşfeden romantik yolculuğu.",
-        "genres": "Family Fantasy Musical",
-        "imdb_rating": 7.1,
-        "imdb_url": "https://www.imdb.com/title/tt2771204/",
-    },
-    {
-        "title": "The Lion King",
-        "year": 2019,
-        "quality": "Full HD",
-        "duration": 118,
-        "poster_url": "/assets/images/lion_king.png",
-        "description": "Genç aslan Simba'nın, babasının ölümünden sonra krallığı geri almak için verdiği mücadeleyi ve kendini keşfetme yolculuğunu anlatan epik bir macera.",
-        "genres": "Animation Adventure Drama Family",
-        "imdb_rating": 6.8,
-        "imdb_url": "https://www.imdb.com/title/tt6105098/",
-    }, 
-    {
-        "title": "Frozen II",                   
-        "year": 2019,
-        "quality": "Full HD",
-        "duration": 103,
-        "poster_url": "/assets/images/frozen_2.png",
-        "description": "Kraliçe Elsa, geçmişinden gelen gizemli bir çağrı üzerine Arendelle'i kurtarmak için kardeşi Anna, Kristoff, Olaf ve Sven ile birlikte bilinmeyen bir ormana doğru tehlikeli bir yolculuğa çıkar.",
-        "genres": "Animation Adventure Comedy Family",
-        "imdb_rating": 6.8,         
-        "imdb_url": "https://www.imdb.com/title/tt4520988/",
-    }
-]
-
 def create_app() -> Flask:
     app = Flask(__name__, static_folder='assets', static_url_path='/assets')
     app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "filmsage-akbas-2026-secret")
-    app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///" + os.path.join(BASE_DIR, "app.db")
+    
+    # --- 1. MYSQL BAĞLANTISI ---
+    app.config["SQLALCHEMY_DATABASE_URI"] = "mysql+pymysql://root@localhost/movie_sage_db"
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
     db.init_app(app)
 
     with app.app_context():
         db.create_all()
-        ensure_schema()
-        seed_database()
 
     @app.before_request
     def load_current_user():
@@ -132,7 +39,8 @@ def create_app() -> Flask:
 
     @app.route("/")
     def home():
-        featured = Movie.query.order_by(Movie.imdb_rating.desc().nullslast(), Movie.year.desc()).limit(12).all()
+        # MySQL uyumlu sıralama (NULLS LAST yerine otomatik son oylananlar)
+        featured = Movie.query.order_by(Movie.imdb_rating.desc(), Movie.year.desc()).limit(12).all()
         return render_template("home.html", featured_movies=featured)
 
     @app.route("/film-bul")
@@ -141,15 +49,19 @@ def create_app() -> Flask:
         if not query:
             return render_template("search.html", movies=[], query="")
 
-        movies = Movie.query.filter(Movie.title.ilike(f"%{query}%")).all()
-        
-        if not movies:
-            new_movie_data = fetch_imdb_movie_data(query)
-            if new_movie_data:
-                new_movie = Movie(**new_movie_data)
-                db.session.add(new_movie)
-                db.session.commit()
-                movies = [new_movie]
+        # --- AKILLI ARAMA MOTORU GÜNCELLEMESİ ---
+        # 1. Kullanıcının aramasındaki boşluk ve tireleri temizle
+        clean_query = query.replace("-", "").replace(" ", "")
+
+        # 2. Veritabanında hem esnek isim araması yap hem de türlerde ara
+        movies = Movie.query.filter(
+            or_(
+                # Veritabanındaki başlıktaki boşluk ve tireleri yok sayarak eşleştir
+                func.replace(func.replace(Movie.title, "-", ""), " ", "").ilike(f"%{clean_query}%"),
+                # Türler içinde ara (Action, Sci-Fi vb.)
+                Movie.genres.ilike(f"%{query}%")
+            )
+        ).limit(30).all() # Daha fazla sonuç için limiti 30 yaptık
         
         user_ratings = {}
         if g.get("current_user"):
@@ -228,15 +140,14 @@ def create_app() -> Flask:
             
             return redirect(url_for("on_degerlendirme_puanlamasi", genre=selected_genre, q=search_query))
 
-        # --- Filtreleme ve Popülerlik Sıralaması ---
         query = Movie.query
         if selected_genre:
             query = query.filter(Movie.genres.ilike(f"%{selected_genre}%"))
         if search_query:
             query = query.filter(Movie.title.ilike(f"%{search_query}%"))
         
-        # Puanı olanları en üste alarak 21 film getiriyoruz (3'lü grid uyumu için)
-        movies_to_rate = query.order_by(Movie.imdb_rating.desc().nullslast()).limit(21).all()
+        # Puanlama ekranında popüler filmleri getiriyoruz
+        movies_to_rate = query.order_by(Movie.imdb_rating.desc()).limit(21).all()
                               
         genres = ["Action", "Adventure", "Animation", "Comedy", "Drama", "Fantasy", "Sci-Fi", "Romance"]
         
@@ -278,7 +189,6 @@ def create_app() -> Flask:
         user_rating_obj = Rating.query.filter_by(user_id=user.id, movie_id=movie_id).first()
         user_rating = user_rating_obj.score if user_rating_obj else None
         
-        # Hata Yakalama: Benzer filmler sistemi boşsa sayfa çökmesin
         try:
             recommender = HybridRecommender(db.session)
             similar = recommender.get_similar_movies(movie_id, top_n=4)
@@ -301,21 +211,6 @@ def create_app() -> Flask:
 
     return app
 
-def ensure_schema() -> None:
-    inspector = db.inspect(db.engine)
-    columns = {column["name"] for column in inspector.get_columns("movies")}
-    
-    if "imdb_rating" not in columns:
-        db.session.execute(text("ALTER TABLE movies ADD COLUMN imdb_rating FLOAT"))
-    if "imdb_url" not in columns:
-        db.session.execute(text("ALTER TABLE movies ADD COLUMN imdb_url VARCHAR(255)"))
-    if "director" not in columns:
-        db.session.execute(text("ALTER TABLE movies ADD COLUMN director VARCHAR(100)"))
-    if "cast" not in columns:
-        db.session.execute(text("ALTER TABLE movies ADD COLUMN cast VARCHAR(500)"))
-        
-    db.session.commit()
-
 def save_rating(user_id: int, movie_id: int, score: float) -> None:
     rating = Rating.query.filter_by(user_id=user_id, movie_id=movie_id).first()
     if rating:
@@ -323,12 +218,6 @@ def save_rating(user_id: int, movie_id: int, score: float) -> None:
     else:
         db.session.add(Rating(user_id=user_id, movie_id=movie_id, score=score))
     db.session.commit()
-
-def seed_database() -> None:
-    if Movie.query.count() == 0:
-        for movie_data in MOVIE_SEEDS:
-            db.session.add(Movie(**movie_data))
-        db.session.commit()
 
 app = create_app()
 

@@ -30,7 +30,10 @@ class Movie(db.Model):
     imdb_url = db.Column(db.String(255))
     ratings = db.relationship("Rating", backref="movie", lazy=True, cascade="all, delete-orphan")
     director = db.Column(db.String(100)) 
-    cast = db.Column(db.String(500))     #
+    cast = db.Column(db.String(500))     
+    movielens_id = db.Column(db.Integer, unique=True) 
+    tmdb_id = db.Column(db.Integer)
+    imdb_id = db.Column(db.String(20))
 
 class Rating(db.Model):
     __tablename__ = "ratings"

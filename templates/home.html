@@ -21,7 +21,11 @@
     <div class="poster-wall">
       {% for movie in featured_movies %}
       <a href="{{ url_for('movie_detail', movie_id=movie.id) }}" class="poster-tile">
-        <img src="{{ movie.poster_url }}" alt="{{ movie.title }} poster">
+        <img 
+        src="{{ movie.poster_url if movie.poster_url else '/assets/images/genel.png' }}"
+        alt="{{ movie.title }} poster"
+        onerror="this.onerror=null; this.src='/assets/images/genel.png';"
+        >
       </a>
       {% endfor %}
     </div>
