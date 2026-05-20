@@ -4,9 +4,9 @@
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{% block title %}Movie Sage Hybrid Recommender{% endblock %}</title>
+  <title>{% block title %}Movie Sage Akıllı Film Asistanı{% endblock %}</title>
   <link rel="shortcut icon" href="/favicon.svg" type="image/svg+xml">
- <link rel="stylesheet" href="../assets/css/style.css">
+  <link rel="stylesheet" href="{{ '/assets/css/style.css' }}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -17,23 +17,26 @@
       <div class="overlay" data-overlay></div>
 
       <a href="{{ url_for('home') }}" class="logo">
-        <img src="../assets/images/logo.svg" alt="Movie Sage logo">
+        <img src="{{ '/assets/images/logo.svg' }}" alt="Movie Sage logo">
       </a>
 
       <nav class="desktop-navbar">
         <ul class="navbar-list centered-nav">
-          <li><a href="{{ url_for('home') }}" class="navbar-link">Home</a></li>
-          <li><a href="{{ url_for('find_movie') }}" class="navbar-link">Find Movie</a></li>
+          <li><a href="{{ url_for('home') }}" class="navbar-link">Ana Sayfa</a></li>
+          <li><a href="{{ url_for('find_movie') }}" class="navbar-link">Film Ara</a></li>
+          {% if current_user %}
+          <li><a href="{{ url_for('kisisel_film_onerileri') }}" class="navbar-link">Önerilerim</a></li>
+          <li><a href="{{ url_for('my_ratings') }}" class="navbar-link">Puanlarım</a></li>
+          {% endif %}
         </ul>
       </nav>
 
       <div class="header-actions header-auth">
         {% if current_user %}
-        <a href="{{ url_for('on_degerlendirme_puanlamasi') }}" class="btn btn-primary">Recommendations</a>
-        <a href="{{ url_for('logout') }}" class="btn btn-primary btn-outline-alt">Logout</a>
+        <a href="{{ url_for('logout') }}" class="btn btn-primary btn-outline-alt">Çıkış Yap</a>
         {% else %}
-        <a href="{{ url_for('kullanici_girisi') }}" class="btn btn-primary btn-outline-alt">Giris Yap</a>
-        <a href="{{ url_for('kullanici_kaydi') }}" class="btn btn-primary">Kayit Ol</a>
+        <a href="{{ url_for('kullanici_girisi') }}" class="btn btn-primary btn-outline-alt">Giriş Yap</a>
+        <a href="{{ url_for('kullanici_kaydi') }}" class="btn btn-primary">Kayıt Ol</a>
         {% endif %}
       </div>
 
@@ -52,15 +55,16 @@
         </div>
 
         <ul class="navbar-list">
-          <li><a href="{{ url_for('home') }}" class="navbar-link">Home</a></li>
-          <li><a href="{{ url_for('find_movie') }}" class="navbar-link">Find Movie</a></li>
-          <li><a href="{{ url_for('on_degerlendirme_puanlamasi') }}" class="navbar-link">Cold Start</a></li>
-          <li><a href="{{ url_for('kisisel_film_onerileri') }}" class="navbar-link">Recommendations</a></li>
+          <li><a href="{{ url_for('home') }}" class="navbar-link">Ana Sayfa</a></li>
+          <li><a href="{{ url_for('find_movie') }}" class="navbar-link">Film Ara</a></li>
           {% if current_user %}
-          <li><a href="{{ url_for('logout') }}" class="navbar-link">Logout</a></li>
+          <li><a href="{{ url_for('on_degerlendirme_puanlamasi') }}" class="navbar-link">Film Puanla</a></li>
+          <li><a href="{{ url_for('kisisel_film_onerileri') }}" class="navbar-link">Önerilerim</a></li>
+          <li><a href="{{ url_for('my_ratings') }}" class="navbar-link">Puanlarım</a></li>
+          <li><a href="{{ url_for('logout') }}" class="navbar-link">Çıkış Yap</a></li>
           {% else %}
-          <li><a href="{{ url_for('kullanici_girisi') }}" class="navbar-link">Login</a></li>
-          <li><a href="{{ url_for('kullanici_kaydi') }}" class="navbar-link">Register</a></li>
+          <li><a href="{{ url_for('kullanici_girisi') }}" class="navbar-link">Giriş Yap</a></li>
+          <li><a href="{{ url_for('kullanici_kaydi') }}" class="navbar-link">Kayıt Ol</a></li>
           {% endif %}
         </ul>
       </nav>
@@ -88,10 +92,10 @@
     <div class="container">
       <div class="footer-brand-wrapper">
         <a href="{{ url_for('home') }}" class="logo">
-          <img src="../assets/images/logo.svg" alt="Movie Sage logo">
+          <img src="{{ '/assets/images/logo.svg' }}" alt="Movie Sage logo">
         </a>
       </div>
-      <p class="copyright">Weighted Hybrid Movie Recommendation System</p>
+      <p class="copyright">Movie Sage | Ağırlıklı Hibrit Film Öneri Sistemi</p>
     </div>
   </footer>
 
@@ -101,6 +105,6 @@
 
   <script type="module" src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js"></script>
   <script nomodule src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js"></script>
-  <script src="../assets/js/script.js"></script>
+  <script src="{{ '/assets/js/script.js' }}"></script>
 </body>
 </html>

@@ -36,6 +36,19 @@ def fetch_movie_details(tmdb_id):
         print(f"TMDb ID {tmdb_id} çekilirken API Hatası: {e}")
     return None
 
+def search_tmdb_movies(query):
+    """Kullanıcının girdiği kelimeyi TMDb üzerinde (tr-TR) aratır ve eşleşen tmdb_id listesini döndürür."""
+    if not query: return []
+    url = f"{BASE_URL}/search/movie?api_key={API_KEY}&language=tr-TR&query={query}"
+    try:
+        response = requests.get(url, timeout=5)
+        if response.status_code == 200:
+            results = response.json().get('results', [])
+            return [movie['id'] for movie in results[:15]]
+    except Exception as e:
+        print(f"TMDb Arama Hatası: {e}")
+    return []
+
 def run_enrichment():
     """Veritabanındaki filmleri tarayıp eksik verileri API'den doldurur."""
     app = create_app()

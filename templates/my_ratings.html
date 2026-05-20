@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="top-rated" style="padding-top: 140px; background: none; min-height: 80vh;">
+  <div class="container reveal">
+    <div style="text-align: center; margin-bottom: 20px;">
+      <p class="section-subtitle">Kişisel Arşiviniz</p>
+      <h2 class="h2 section-title">Puanladığım Filmler</h2>
+      <p style="color: var(--gray-x);">Buradan geçmişte verdiğiniz puanları inceleyebilir ve isterseniz güncelleyebilirsiniz.</p>
+    </div>
+
+    {% if rated_movies and rated_movies|length > 0 %}
+    <form method="POST" action="{{ url_for('my_ratings') }}">
+      <ul class="movies-list" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 30px;">
+        {% for item in rated_movies %}
+        <li>
+          <div class="movie-card glass-panel" style="padding: 15px; text-align: center; height: 100%;">
+            <figure class="card-banner" style="border-radius: 12px; height: 280px; overflow: hidden; margin-bottom: 15px;">
+              <img src="{{ item.movie.poster_url if item.movie.poster_url else 'https://placehold.co/400x600/141423/00d4ff?text=Afis+Bekleniyor' }}" alt="{{ item.movie.title }}" style="object-fit: cover; height: 100%; width: 100%;" onerror="this.onerror=null; this.src='https://placehold.co/400x600/141423/00d4ff?text=Afis+Bekleniyor';">
+            </figure>
+
+            <h3 class="card-title" style="font-size: 15px; margin-bottom: 10px; color: white;">
+              {{ item.movie.title }}
+            </h3>
+
+            <div>
+              <p style="color: var(--primary-accent); font-size: 12px; margin-bottom: 5px;">Mevcut Puanınız: <strong>{{ item.score }}</strong></p>
+              <select name="rating_{{ item.movie.id }}" class="input-field" style="background: rgba(0,0,0,0.5); color: white; border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; padding: 6px; width: 100%; font-size: 13px;">
+                <option value="{{ item.score }}">Değiştir...</option>
+                <option value="10">10 - Mükemmel</option>
+                <option value="9">9 - Çok iyi</option>
+                <option value="8">8 - İyi</option>
+                <option value="7">7 - Beğendim</option>
+                <option value="6">6 - Fena değil</option>
+                <option value="5">5 - Orta</option>
+                <option value="4">4 - Zayıf</option>
+                <option value="3">3 - Kötü</option>
+                <option value="2">2 - Çok kötü</option>
+                <option value="1">1 - Zaman kaybı</option>
+              </select>
+            </div>
+          </div>
+        </li>
+        {% endfor %}
+      </ul>
+
+      <div style="text-align: center; margin: 50px 0;">
+        <button type="submit" class="btn btn-primary" style="display: inline-flex; padding: 15px 40px; font-weight: bold; font-size: 16px;">
+          DEĞİŞİKLİKLERİ KAYDET
+        </button>
+      </div>
+    </form>
+    {% else %}
+    <div class="glass-panel" style="text-align: center; margin: 40px auto; max-width: 600px; padding: 50px;">
+      <ion-icon name="film-outline" style="font-size: 60px; color: var(--primary-accent); margin-bottom: 20px;"></ion-icon>
+      <h3 style="color: white; margin-bottom: 15px;">Henüz hiç film puanlamadınız.</h3>
+      <a href="{{ url_for('on_degerlendirme_puanlamasi') }}" class="btn btn-primary" style="display: inline-flex;">Film Puanlamaya Başla</a>
+    </div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

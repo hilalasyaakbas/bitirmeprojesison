@@ -4,68 +4,116 @@
 {% block title %} Movie Sage | Sizin İçin Öneriler {% endblock %}
 
 {% block content %}
-<section class="hero hero-home" style="background: none;">
-  <div class="container hero-home-shell">
-    <div class="hero-content">
-      <p class="hero-subtitle">Hibrit Öneri Analizi Tamamlandı</p>
-      <h1 class="h1 hero-title">Size Özel <strong>Film Önerileri</strong></h1>
-      <p class="hero-text">
-        Puanladığınız filmler ve zevkleriniz analiz edildi. İşte <strong>Movie Sage</strong> hibrit sisteminin sizin için seçtiği en uyumlu sonuçlar.
-      </p>
-      
-      <div class="meta-wrapper" style="margin-top: 20px;">
-        <div class="badge badge-outline">Hybrid Mode: ON</div>
-        <div class="badge badge-outline">Precision: High</div>
+
+{% if recommended_movies and recommended_movies|length > 0 %}
+  {% set top_movie = recommended_movies[0] %}
+  
+  <!-- TOP MATCH HERO SECTION - YENİDEN TASARLANDI -->
+  <section style="padding-top: 140px; padding-bottom: 60px;">
+    <div class="container reveal">
+      <div class="glass-panel" style="display: flex; flex-wrap: wrap; gap: 50px; padding: 40px; align-items: center; background: rgba(20, 20, 35, 0.8);">
+        
+        <!-- Net ve Düzgün Oranlı Poster -->
+        <figure class="card-banner" style="flex: 0 0 280px; max-width: 280px; border-radius: 16px; box-shadow: 0 15px 40px rgba(0,0,0,0.6); overflow: hidden; margin: 0 auto;">
+          <img src="{{ top_movie.poster_url if top_movie.poster_url else 'https://placehold.co/400x600/141423/00d4ff?text=Afis+Bekleniyor' }}" 
+               alt="{{ top_movie.title }}" 
+               style="width: 100%; height: auto; display: block; object-fit: cover; aspect-ratio: 2/3;" 
+               onerror="this.onerror=null; this.src='https://placehold.co/400x600/141423/00d4ff?text=Afis+Bekleniyor';">
+        </figure>
+        
+        <!-- İçerik -->
+        <div class="top-match-content" style="flex: 1; min-width: 300px;">
+          <div class="match-badge">
+            <ion-icon name="sparkles"></ion-icon> En Yüksek Eşleşme
+          </div>
+          <p class="hero-subtitle" style="margin-bottom: 10px; color: var(--primary-accent);">Sizin İçin En İyi Seçim</p>
+          <h1 class="h1 hero-title" style="margin-bottom: 25px; font-size: 3rem; line-height: 1.1;">
+            {{ top_movie.title }}
+          </h1>
+          <div class="meta-wrapper" style="margin-bottom: 40px;">
+            <div class="badge badge-fill">{{ top_movie.year }}</div>
+            <div class="badge badge-outline">Hibrit Algoritma</div>
+          </div>
+          <a href="{{ url_for('movie_detail', movie_id=top_movie.id) }}" class="btn btn-primary" style="display: inline-flex; padding: 18px 40px; font-size: 16px;">
+            <ion-icon name="play" style="font-size: 20px;"></ion-icon> Filmi İncele
+          </a>
+        </div>
+
       </div>
     </div>
+  </section>
 
-    <div class="poster-wall">
-      {% if recommended_movies %}
-        {% for movie in recommended_movies %}
-        <a href="{{ url_for('movie_detail', movie_id=movie.id) }}" class="poster-tile">
-          <img src="{{ movie.poster_url if movie.poster_url else '/assets/images/genel.png' }}" 
-          alt="{{ movie.title }} poster"
-          onerror="this.onerror=null; this.src='/assets/images/genel.png';"
-          >
-          <div class="poster-content" style="padding: 10px; background: rgba(0,0,0,0.5);">
-            <p style="font-size: 14px; color: var(--citrine);">{{ movie.title }}</p>
+  {% if recommended_movies|length > 1 %}
+  <!-- CAROUSEL FOR TOP 5 -->
+  <section class="top-rated" style="padding-top: 40px; padding-bottom: 60px; background: none;">
+    <div class="container reveal">
+      <p class="section-subtitle">Sizin İçin Seçtiklerimiz</p>
+      <h2 class="h2 section-title" style="text-align: left;">Sıradaki En İyi Eşleşmeler</h2>
+      
+      <div class="recommendation-carousel" style="gap: 30px;">
+        {% for movie in recommended_movies[1:6] %}
+        <div class="movie-card carousel-item" style="min-width: 220px; max-width: 220px;">
+          <a href="{{ url_for('movie_detail', movie_id=movie.id) }}">
+            <figure class="card-banner" style="border-radius: 12px; box-shadow: 0 10px 20px rgba(0,0,0,0.4);">
+              <img src="{{ movie.poster_url if movie.poster_url and movie.poster_url != 'None' else 'https://placehold.co/400x600/141423/00d4ff?text=Afis+Bekleniyor' }}" alt="{{ movie.title }}" onerror="this.onerror=null; this.src='https://placehold.co/400x600/141423/00d4ff?text=Afis+Bekleniyor';">
+            </figure>
+          </a>
+          <div class="title-wrapper">
+            <a href="{{ url_for('movie_detail', movie_id=movie.id) }}">
+              <h3 class="card-title" style="font-size: 16px;">{{ movie.title }}</h3>
+            </a>
+            <time datetime="{{ movie.year }}" style="font-size: 13px;">{{ movie.year }}</time>
           </div>
-        </a>
-        {% endfor %}
-      {% else %}
-        <div class="hero-content">
-            <p class="hero-text">Henüz yeterli veri toplanamadı. Lütfen daha fazla film puanlayın.</p>
-            <a href="{{ url_for('on_degerlendirme_puanlamasi') }}" class="btn btn-primary">Puanlamaya Dön</a>
         </div>
-      {% endif %}
+        {% endfor %}
+      </div>
     </div>
-  </div>
-</section>
+  </section>
+  {% endif %}
 
-<section class="top-rated" style="padding-bottom: 100px;">
-    <div class="container">
-        <p class="section-subtitle">Online Streaming</p>
-        <h2 class="h2 section-title">İlginizi Çekebilecek Diğerleri</h2>
-        
-        <ul class="movies-list">
-            {% for movie in recommended_movies[4:] %} {# Listenin geri kalanını burada listeleyebiliriz #}
-            <li>
-                <div class="movie-card">
-                    <a href="{{ url_for('movie_detail', movie_id=movie.id) }}">
-                        <figure class="card-banner">
-                            <img src="{{ movie.poster_url }}" alt="{{ movie.title }}">
-                        </figure>
-                    </a>
-                    <div class="title-wrapper">
-                        <a href="{{ url_for('movie_detail', movie_id=movie.id) }}">
-                            <h3 class="card-title">{{ movie.title }}</h3>
-                        </a>
-                        <time datetime="{{ movie.year }}">{{ movie.year }}</time>
-                    </div>
-                </div>
-            </li>
-            {% endfor %}
-        </ul>
+  {% if recommended_movies|length > 6 %}
+  <!-- GRID FOR THE REST -->
+  <section class="top-rated" style="padding-top: 20px; padding-bottom: 100px; background: none;">
+    <div class="container reveal">
+      <h2 class="h2 section-title" style="text-align: left; margin-bottom: 40px;">Diğer Güçlü Eşleşmeler</h2>
+      
+      <!-- Poster Büyüklüğü Eşitsizliğini Çözmek İçin Sabit Grid Sütunları Eklendi -->
+      <ul class="movies-list" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 30px;">
+        {% for movie in recommended_movies[6:] %}
+        <li>
+          <div class="movie-card">
+            <a href="{{ url_for('movie_detail', movie_id=movie.id) }}">
+              <figure class="card-banner" style="border-radius: 12px; box-shadow: 0 10px 20px rgba(0,0,0,0.4);">
+                <img src="{{ movie.poster_url if movie.poster_url and movie.poster_url != 'None' else 'https://placehold.co/400x600/141423/00d4ff?text=Afis+Bekleniyor' }}" alt="{{ movie.title }}" onerror="this.onerror=null; this.src='https://placehold.co/400x600/141423/00d4ff?text=Afis+Bekleniyor';">
+              </figure>
+            </a>
+            <div class="title-wrapper">
+              <a href="{{ url_for('movie_detail', movie_id=movie.id) }}">
+                <h3 class="card-title" style="font-size: 16px;">{{ movie.title }}</h3>
+              </a>
+              <time datetime="{{ movie.year }}" style="font-size: 13px;">{{ movie.year }}</time>
+            </div>
+          </div>
+        </li>
+        {% endfor %}
+      </ul>
     </div>
-</section>
+  </section>
+  {% endif %}
+
+{% else %}
+  <!-- NO DATA VIEW -->
+  <section class="hero hero-home" style="min-height: 80vh;">
+    <div class="container hero-home-shell glass-panel" style="padding: 60px; max-width: 800px; margin: 0 auto; text-align: center;">
+      <div class="hero-content" style="margin-top: 0;">
+        <h1 class="h1 hero-title">Yeterli Veri Bulunamadı</h1>
+        <p class="hero-text" style="font-size: 1.2rem; margin-bottom: 30px;">
+          Size harika öneriler sunabilmemiz için zevklerinizi biraz daha iyi tanımamız gerekiyor. Lütfen en az 5 film puanlayın.
+        </p>
+        <a href="{{ url_for('on_degerlendirme_puanlamasi') }}" class="btn btn-primary" style="display: inline-flex; margin: 0 auto;">Puanlamaya Başla</a>
+      </div>
+    </div>
+  </section>
+{% endif %}
+
 {% endblock %}

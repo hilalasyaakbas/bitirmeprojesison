@@ -1,30 +1,34 @@
 <!DOCTYPE html>
 {% extends "base.html" %}
 
-{% block title %} Moive Sage | Home{% endblock %}
+{% block title %} Movie Sage | Akıllı Film Asistanı {% endblock %}
 
 {% block content %}
-<section class="hero hero-home">
+<section class="hero hero-home" style="position: relative; overflow: hidden; padding-top: 150px;">
+  <div class="top-match-gradient" style="z-index: -1;"></div>
   <div class="container hero-home-shell">
-    <div class="hero-content">
-      <p class="hero-subtitle">Movie Discovery Platform</p>
-      <h1 class="h1 hero-title">Moive Sage <strong>Movie Recommender</strong></h1>
+    <div class="hero-content glass-panel reveal" style="padding: 40px; border-radius: 20px; z-index: 2;">
+      <p class="hero-subtitle">Hoş Geldiniz</p>
+      <h1 class="h1 hero-title">Movie Sage <strong>Akıllı Film Asistanı</strong></h1>
       <p class="hero-text">
-        Aradigin filmi bul, puanla ve hibrit sistemin sana ozel onerilerini kesfet.
+        Aradığın filmi bul, puanla ve hibrit yapay zeka sisteminin sana özel önerilerini keşfet.
       </p>
-      <form action="{{ url_for('find_movie') }}" method="get" class="hero-search-form">
-        <input class="input-field" type="text" name="q" placeholder="Film ara: Interstellar, Parasite..." required>
-        <button type="submit" class="btn btn-primary">Find Movie</button>
+      <form action="{{ url_for('find_movie') }}" method="get" class="hero-search-form" style="display: flex; gap: 10px; margin-top: 20px;">
+        <input class="input-field glass-panel" type="text" name="q" placeholder="Film Ara: Interstellar, Parasite..." required style="padding: 15px 20px; color: white;">
+        <button type="submit" class="btn btn-primary" style="margin: 0;">Film Ara</button>
       </form>
     </div>
 
-    <div class="poster-wall">
+    <div class="poster-wall reveal" style="transition-delay: 0.2s; z-index: 2;">
       {% for movie in featured_movies %}
       <a href="{{ url_for('movie_detail', movie_id=movie.id) }}" class="poster-tile">
         <img 
-        src="{{ movie.poster_url if movie.poster_url else '/assets/images/genel.png' }}"
+        src="{{ movie.poster_url if movie.poster_url and movie.poster_url != 'None' else 'https://placehold.co/400x600/141423/00d4ff?text=Afis+Bekleniyor' }}"
         alt="{{ movie.title }} poster"
-        onerror="this.onerror=null; this.src='/assets/images/genel.png';"
+        onerror="this.onerror=null; this.src='https://placehold.co/400x600/141423/00d4ff?text=Afis+Bekleniyor';"
+        style="border-radius: 12px; box-shadow: 0 10px 20px rgba(0,0,0,0.5); transition: transform 0.3s;"
+        onmouseover="this.style.transform='scale(1.05) translateY(-5px)';"
+        onmouseout="this.style.transform='scale(1) translateY(0)';"
         >
       </a>
       {% endfor %}

@@ -7,9 +7,9 @@
   <div class="container">
     <figure class="movie-detail-banner">
       <img
-      src="{{ movie.poster_url if movie.poster_url else '/assets/images/genel.png' }}"
+      src="{{ movie.poster_url if movie.poster_url and movie.poster_url != 'None' else 'https://placehold.co/400x600/141423/00d4ff?text=Afis+Bekleniyor' }}"
       alt="{{ movie.title }} movie poster"
-      onerror="this.onerror=null; this.src='/assets/images/genel.png';"
+      onerror="this.onerror=null; this.src='https://placehold.co/400x600/141423/00d4ff?text=Afis+Bekleniyor';"
     >
       <a href="{{ movie.imdb_url or '#' }}" class="play-btn" target="_blank" rel="noreferrer">
         <ion-icon name="open-outline"></ion-icon>
@@ -17,9 +17,10 @@
     </figure>
 
     <div class="movie-detail-content">
-      <p class="detail-subtitle">Metadata Enriched Detail</p>
-      <h1 class="h1 detail-title">{{ movie.title }} <strong>{{ movie.year }}</strong></h1><h1 class="h1 detail-title">
-        {% if movie.year %}
+      <p class="detail-subtitle">Film Detayları</p>
+      <h1 class="h1 detail-title">
+        {{ movie.title }} 
+        {% if movie.year and movie.year != 'None' %}
         <strong>{{ movie.year }}</strong>
         {% endif %}
       </h1>
@@ -123,7 +124,7 @@
         <div class="movie-card">
           <a href="{{ url_for('movie_detail', movie_id=similar_movie.id) }}">
             <figure class="card-banner">
-              <img src="{{ similar_movie.poster_url }}" alt="{{ similar_movie.title }} poster">
+              <img src="{{ similar_movie.poster_url if similar_movie.poster_url and similar_movie.poster_url != 'None' else 'https://placehold.co/400x600/141423/00d4ff?text=Afis+Bekleniyor' }}" alt="{{ similar_movie.title }} poster" onerror="this.onerror=null; this.src='{{ 'https://placehold.co/400x600/141423/00d4ff?text=Afis+Bekleniyor' }}';">
             </figure>
           </a>
 

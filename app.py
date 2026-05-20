@@ -37,10 +37,51 @@ def create_app() -> Flask:
             return None
         return g.current_user
 
+    def ensure_movies_enriched(movies):
+        if not movies: return
+        from imdb_service import fetch_movie_details
+        
+        if not isinstance(movies, list):
+            movies = [movies]
+            
+        updated = False
+        for movie in movies:
+            if not movie: continue
+            
+            # Eğer afiş yoksa, "None" ise veya eski sabit fotoğraf (/assets/images/...) olarak kaydedilmişse yeniden çek!
+            needs_enrichment = (
+                not movie.poster_url or 
+                movie.poster_url == 'None' or 
+                'assets/images' in movie.poster_url or
+                not movie.director or 
+                movie.director == 'None' or
+                not movie.description or 
+                movie.description == 'None'
+            )
+            
+            if needs_enrichment:
+                data = fetch_movie_details(movie.tmdb_id)
+                if data:
+                    movie.description = data['description']
+                    movie.poster_url = data['poster_url']
+                    movie.director = data['director']
+                    movie.cast = data['cast']
+                    movie.duration = data['duration']
+                    movie.imdb_rating = data['imdb_rating']
+                    updated = True
+        
+        if updated:
+            try:
+                db.session.commit()
+            except Exception as e:
+                db.session.rollback()
+                print("On the fly enrich DB error:", e)
+
     @app.route("/")
     def home():
         # MySQL uyumlu sıralama (NULLS LAST yerine otomatik son oylananlar)
         featured = Movie.query.order_by(Movie.imdb_rating.desc(), Movie.year.desc()).limit(12).all()
+        ensure_movies_enriched(featured)
         return render_template("home.html", featured_movies=featured)
 
     @app.route("/film-bul")
@@ -53,15 +94,23 @@ def create_app() -> Flask:
         # 1. Kullanıcının aramasındaki boşluk ve tireleri temizle
         clean_query = query.replace("-", "").replace(" ", "")
 
-        # 2. Veritabanında hem esnek isim araması yap hem de türlerde ara
+        # 2. TMDb API üzerinden çok dilli (Türkçe & Orijinal Ad) arama yapıp eşleşen ID'leri al
+        from imdb_service import search_tmdb_movies
+        tmdb_ids = search_tmdb_movies(query)
+
+        # 3. Kendi veritabanımızda metin eşleştirme VE TMDb'den gelen eşleşmeleri birleştir
         movies = Movie.query.filter(
             or_(
-                # Veritabanındaki başlıktaki boşluk ve tireleri yok sayarak eşleştir
+                # Kendi veritabanımızdaki İngilizce/Türkçe isimler
                 func.replace(func.replace(Movie.title, "-", ""), " ", "").ilike(f"%{clean_query}%"),
-                # Türler içinde ara (Action, Sci-Fi vb.)
-                Movie.genres.ilike(f"%{query}%")
+                # Türler içinde ara
+                Movie.genres.ilike(f"%{query}%"),
+                # TMDb yapay zekasından gelen kesin eşleşmeler!
+                Movie.tmdb_id.in_(tmdb_ids) if tmdb_ids else False
             )
-        ).limit(30).all() # Daha fazla sonuç için limiti 30 yaptık
+        ).limit(30).all()
+        
+        ensure_movies_enriched(movies)
         
         user_ratings = {}
         if g.get("current_user"):
@@ -148,6 +197,7 @@ def create_app() -> Flask:
         
         # Puanlama ekranında popüler filmleri getiriyoruz
         movies_to_rate = query.order_by(Movie.imdb_rating.desc()).limit(21).all()
+        ensure_movies_enriched(movies_to_rate)
                               
         genres = ["Action", "Adventure", "Animation", "Comedy", "Drama", "Fantasy", "Sci-Fi", "Romance"]
         
@@ -167,6 +217,7 @@ def create_app() -> Flask:
 
         recommender = HybridRecommender(db.session)
         result = recommender.recommend_for_user(user.id, top_n=8)
+        ensure_movies_enriched(result["recommendations"])
         return render_template("recommendations.html", recommended_movies=result["recommendations"])
 
     @app.route("/film/<int:movie_id>", methods=["GET", "POST"])
@@ -175,6 +226,7 @@ def create_app() -> Flask:
         if not user: return redirect(url_for("kullanici_girisi"))
         
         movie = Movie.query.get_or_404(movie_id)
+        ensure_movies_enriched([movie])
         
         stats = {
             "rating_count": len(movie.ratings),
@@ -192,6 +244,7 @@ def create_app() -> Flask:
         try:
             recommender = HybridRecommender(db.session)
             similar = recommender.get_similar_movies(movie_id, top_n=4)
+            ensure_movies_enriched(similar)
         except:
             similar = []
 
@@ -208,6 +261,34 @@ def create_app() -> Flask:
                                imdb_data=imdb_data, 
                                user_rating=user_rating,
                                similar_movies=similar)
+
+    @app.route("/puanlarim", methods=["GET", "POST"])
+    def my_ratings():
+        user = require_user()
+        if not user: return redirect(url_for("kullanici_girisi"))
+        
+        if request.method == "POST":
+            for key, value in request.form.items():
+                if not key.startswith("rating_") or not value: continue
+                movie_id = int(key.split("_", 1)[1])
+                save_rating(user.id, movie_id, float(value))
+            flash("Puanlarınız başarıyla güncellendi!", "success")
+            return redirect(url_for("my_ratings"))
+
+        rated_movies = []
+        movies_to_enrich = []
+        for r in user.ratings:
+            movie = Movie.query.get(r.movie_id)
+            if movie:
+                movies_to_enrich.append(movie)
+                rated_movies.append({
+                    "movie": movie,
+                    "score": r.score
+                })
+        
+        ensure_movies_enriched(movies_to_enrich)
+            
+        return render_template("my_ratings.html", rated_movies=rated_movies)
 
     return app
 
