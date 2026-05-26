@@ -19,6 +19,11 @@ def create_app() -> Flask:
         # Aiven veya Render "mysql://" veriyorsa SQLAlchemy için "mysql+pymysql://" yapıyoruz
         if db_uri.startswith("mysql://"):
             db_uri = db_uri.replace("mysql://", "mysql+pymysql://", 1)
+            
+        # ssl-mode=REQUIRED parametresini temizliyoruz (PyMySQL bu anahtarı doğrudan URL'de tanımaz)
+        if "ssl-mode=" in db_uri:
+            db_uri = db_uri.split("?ssl-mode=")[0].split("&ssl-mode=")[0]
+            
         app.config["SQLALCHEMY_DATABASE_URI"] = db_uri
         
         # Aiven SSL gereksinimi için SSL bağlantı argümanlarını ekliyoruz
