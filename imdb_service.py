@@ -61,8 +61,10 @@ def fetch_movie_details(tmdb_id, title=None, year=None):
         response = requests.get(url, timeout=10)
         
         if response.status_code == 200:
-            parsed = _parse_tmdb_response(response.json(), is_tv=False)
-            if title and not is_title_match(title, parsed['title']):
+            res_json = response.json()
+            parsed = _parse_tmdb_response(res_json, is_tv=False)
+            orig_title = res_json.get('original_title') or res_json.get('original_name', '')
+            if title and not (is_title_match(title, parsed['title']) or is_title_match(title, orig_title)):
                 response.status_code = 404 # Force fallback
             else:
                 return parsed
@@ -93,8 +95,12 @@ def fetch_movie_details(tmdb_id, title=None, year=None):
                             
                             final_resp = requests.get(final_url, timeout=10)
                             if final_resp.status_code == 200:
-                                parsed = _parse_tmdb_response(final_resp.json(), is_tv=is_tv)
-                                if is_title_match(title, parsed['title']) or is_title_match(q_title, parsed['title']):
+                                f_json = final_resp.json()
+                                parsed = _parse_tmdb_response(f_json, is_tv=is_tv)
+                                orig_title_fallback = f_json.get('original_title') or f_json.get('original_name', '')
+                                if (is_title_match(title, parsed['title']) or 
+                                    is_title_match(q_title, parsed['title']) or 
+                                    is_title_match(title, orig_title_fallback)):
                                     return parsed
     except Exception as e:
         print(f"TMDb API Hatası (ID: {tmdb_id}, Title: {title}): {e}")
