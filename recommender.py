@@ -3,7 +3,7 @@ import numpy as np
 from surprise import SVD, Dataset, Reader
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
-
+import joblib
 from models import Movie, Rating
 
 
@@ -58,7 +58,7 @@ class HybridRecommender:
 
     def _prepare_data(self):
         """Veritabanından film metadata bilgisini çeker ve TF-IDF matrisini hazırlar."""
-        movies = self.session.query(Movie).all()
+        movies = self.session.query(Movie).order_by(Movie.id).all()
 
         if not movies:
             return
@@ -73,9 +73,10 @@ class HybridRecommender:
 
             # Genre bilgisini bilinçli olarak birkaç kez ekliyoruz.
             # Bu, cold-start durumda kullanıcının tür tercihinin TF-IDF içinde daha etkili olmasını sağlar.
+            # Genre 3 kez, Yönetmen 2 kez eklenerek TF-IDF ağırlıkları artırıldı.
             content = (
                 f"{genres} {genres} {genres} "
-                f"{director} "
+                f"{director} {director} "
                 f"{cast} "
                 f"{description}"
             )
@@ -118,15 +119,8 @@ class HybridRecommender:
         ])
 
         # 1. Collaborative Filtering - SVD
-        reader = Reader(rating_scale=(1, 10))
-        data = Dataset.load_from_df(
-            df_ratings[["user_id", "movie_id", "score"]],
-            reader
-        )
-
-        trainset = data.build_full_trainset()
-        svd_model = SVD()
-        svd_model.fit(trainset)
+                # 1. Collaborative Filtering - SVD (Kayıtlı Hazır Model Okunuyor)
+        svd_model = joblib.load("svd_model.pkl")
 
         # 2. Content-Based Filtering - TF-IDF user profile
         user_ratings = self.session.query(Rating).filter_by(user_id=user_id).all()

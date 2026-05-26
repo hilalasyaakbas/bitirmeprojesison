@@ -13,8 +13,25 @@ def create_app() -> Flask:
     app = Flask(__name__, static_folder='assets', static_url_path='/assets')
     app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "filmsage-akbas-2026-secret")
     
-    # --- 1. MYSQL BAĞLANTISI ---
-    app.config["SQLALCHEMY_DATABASE_URI"] = "mysql+pymysql://root@localhost/movie_sage_db"
+    # --- 1. DİNAMİK VERİTABANI BAĞLANTISI (Lokal & Canlı Uyumlu) ---
+    db_uri = os.getenv("DATABASE_URL")
+    if db_uri:
+        # Aiven veya Render "mysql://" veriyorsa SQLAlchemy için "mysql+pymysql://" yapıyoruz
+        if db_uri.startswith("mysql://"):
+            db_uri = db_uri.replace("mysql://", "mysql+pymysql://", 1)
+        app.config["SQLALCHEMY_DATABASE_URI"] = db_uri
+        
+        # Aiven SSL gereksinimi için SSL bağlantı argümanlarını ekliyoruz
+        if "aivencloud.com" in db_uri:
+            app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+                "connect_args": {
+                    "ssl": {}
+                }
+            }
+    else:
+        # Lokal MySQL bağlantısı
+        app.config["SQLALCHEMY_DATABASE_URI"] = "mysql+pymysql://root@localhost/movie_sage_db"
+        
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
     db.init_app(app)
@@ -60,7 +77,7 @@ def create_app() -> Flask:
             )
             
             if needs_enrichment:
-                data = fetch_movie_details(movie.tmdb_id)
+                data = fetch_movie_details(movie.tmdb_id, title=movie.title, year=movie.year)
                 if data:
                     movie.description = data['description']
                     movie.poster_url = data['poster_url']
@@ -190,13 +207,36 @@ def create_app() -> Flask:
             return redirect(url_for("on_degerlendirme_puanlamasi", genre=selected_genre, q=search_query))
 
         query = Movie.query
-        if selected_genre:
-            query = query.filter(Movie.genres.ilike(f"%{selected_genre}%"))
         if search_query:
-            query = query.filter(Movie.title.ilike(f"%{search_query}%"))
+            # Akıllı Arama: Hem yerel veritabanı hem de TMDb eşleşmesi
+            clean_query = search_query.replace("-", "").replace(" ", "")
+            from imdb_service import search_tmdb_movies
+            tmdb_ids = search_tmdb_movies(search_query)
+            
+            query = query.filter(
+                or_(
+                    func.replace(func.replace(Movie.title, "-", ""), " ", "").ilike(f"%{clean_query}%"),
+                    Movie.tmdb_id.in_(tmdb_ids) if tmdb_ids else False
+                )
+            )
+            movies_to_rate = query.order_by(Movie.imdb_rating.desc()).limit(21).all()
         
-        # Puanlama ekranında popüler filmleri getiriyoruz
-        movies_to_rate = query.order_by(Movie.imdb_rating.desc()).limit(21).all()
+        elif selected_genre:
+            query = query.filter(Movie.genres.ilike(f"%{selected_genre}%"))
+            # Sadece kategori seçildiyse, o kategorinin en yüksek puanlılarını getir (çok bilinmeyenler çıkabilir ama kategoriye özeldir)
+            movies_to_rate = query.order_by(Movie.imdb_rating.desc()).limit(21).all()
+            
+        else:
+            # HİÇBİR ARAMA/KATEGORİ YOKSA (İLK AÇILIŞ):
+            # Kullanıcının kesinlikle bileceği Kült Klasikler ve Popüler Modern Filmlerin MovieLens ID'leri:
+            # (Inception, Matrix, Interstellar, Godfather, Pulp Fiction, Dark Knight, Avengers, Forrest Gump vb.)
+            popular_cult_ids = [
+                1, 296, 318, 356, 480, 527, 589, 858, 1196, 2571, 2959, 
+                4993, 5952, 7153, 58559, 79132, 109487, 122886, 134130, 89745, 122904
+            ]
+            query = query.filter(Movie.movielens_id.in_(popular_cult_ids))
+            movies_to_rate = query.all()
+            
         ensure_movies_enriched(movies_to_rate)
                               
         genres = ["Action", "Adventure", "Animation", "Comedy", "Drama", "Fantasy", "Sci-Fi", "Romance"]

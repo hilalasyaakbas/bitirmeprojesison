@@ -1,6 +1,7 @@
 import os
 import requests
 import time
+import re
 from app import create_app
 from models import db, Movie
 
@@ -8,32 +9,95 @@ from models import db, Movie
 API_KEY = "b7a102ffd063327aaa162b882ab6f386"
 BASE_URL = "https://api.themoviedb.org/3"
 
-def fetch_movie_details(tmdb_id):
-    """TMDb ID kullanarak filmin detaylarını, yönetmenini ve oyuncularını tek seferde çeker."""
-    url = f"{BASE_URL}/movie/{tmdb_id}?api_key={API_KEY}&language=tr-TR&append_to_response=credits"
+def normalize_title(title):
+    if not title: return ""
+    clean = re.sub(r'\(\d{4}\)', '', title).strip()
+    match = re.match(r'^(.*),\s*(The|A|An)$', clean, flags=re.IGNORECASE)
+    if match:
+        clean = f"{match.group(2)} {match.group(1)}"
+    return clean.strip()
+
+def is_title_match(original_title, tmdb_title):
+    t1 = normalize_title(original_title).lower()
+    t2 = normalize_title(tmdb_title).lower()
+    if not t1 or not t2: return False
+    if t1 in t2 or t2 in t1: return True
+    w1 = set(w for w in t1.split() if len(w) > 3)
+    w2 = set(w for w in t2.split() if len(w) > 3)
+    return len(w1.intersection(w2)) > 0
+
+def _parse_tmdb_response(details, is_tv=False):
+    crew = details.get('credits', {}).get('crew', [])
+    if is_tv:
+        created_by = details.get('created_by', [])
+        if created_by:
+            director = created_by[0]['name']
+        else:
+            director = next((member['name'] for member in crew if member.get('job') in ['Director', 'Executive Producer']), "Bilinmiyor")
+        duration = details.get('episode_run_time', [0])[0] if details.get('episode_run_time') else 0
+    else:
+        director = next((member['name'] for member in crew if member.get('job') == 'Director'), "Bilinmiyor")
+        duration = details.get('runtime', 0)
+        
+    cast_list = details.get('credits', {}).get('cast', [])[:5]
+    cast_names = ", ".join([member['name'] for member in cast_list]) if cast_list else "Oyuncu bilgisi yok"
+    
+    poster_path = details.get('poster_path')
+    
+    return {
+        "title": details.get('title') or details.get('name', ''),
+        "description": details.get('overview', 'Açıklama bulunamadı.') or 'Açıklama bulunamadı.',
+        "poster_url": f"https://image.tmdb.org/t/p/w500{poster_path}" if poster_path else "/assets/images/default-poster.png",
+        "director": director,
+        "cast": cast_names,
+        "duration": duration,
+        "imdb_rating": details.get('vote_average', 0.0)
+    }
+
+def fetch_movie_details(tmdb_id, title=None, year=None):
+    """5 Kademeli Akıllı Oto-Kurtarma Sistemi ile Afiş ve Metadata Çeker"""
     try:
+        url = f"{BASE_URL}/movie/{tmdb_id}?api_key={API_KEY}&language=tr-TR&append_to_response=credits"
         response = requests.get(url, timeout=10)
+        
         if response.status_code == 200:
-            details = response.json()
+            parsed = _parse_tmdb_response(response.json(), is_tv=False)
+            if title and not is_title_match(title, parsed['title']):
+                response.status_code = 404 # Force fallback
+            else:
+                return parsed
+
+        if response.status_code == 404 and title:
+            clean_title = normalize_title(title)
+            search_queries = [(clean_title, year), (clean_title, None)]
             
-            # Yönetmen bilgisini 'crew' içinden ayıkla
-            crew = details.get('credits', {}).get('crew', [])
-            director = next((member['name'] for member in crew if member['job'] == 'Director'), "Bilinmiyor")
-            
-            # İlk 5 oyuncuyu alıp aralarına virgül koyarak birleştir
-            cast_list = details.get('credits', {}).get('cast', [])[:5]
-            cast_names = ", ".join([member['name'] for member in cast_list]) if cast_list else "Oyuncu bilgisi yok"
-            
-            return {
-                "description": details.get('overview', 'Açıklama bulunamadı.'),
-                "poster_url": f"https://image.tmdb.org/t/p/w500{details.get('poster_path')}" if details.get('poster_path') else "/assets/images/default-poster.png",
-                "director": director,
-                "cast": cast_names,
-                "duration": details.get('runtime', 0),
-                "imdb_rating": details.get('vote_average', 0.0)
-            }
+            if ":" in clean_title:
+                search_queries.append((clean_title.split(":")[0].strip(), None))
+            elif "-" in clean_title:
+                search_queries.append((clean_title.split("-")[0].strip(), None))
+
+            for q_title, q_year in search_queries:
+                if not q_title: continue
+                
+                search_url = f"{BASE_URL}/search/multi?api_key={API_KEY}&language=tr-TR&query={q_title}"
+                if q_year: search_url += f"&year={q_year}"
+                
+                search_resp = requests.get(search_url, timeout=10)
+                if search_resp.status_code == 200:
+                    results = search_resp.json().get('results', [])
+                    for r in results:
+                        if r.get('media_type') in ['movie', 'tv']:
+                            new_id = r['id']
+                            is_tv = (r['media_type'] == 'tv')
+                            final_url = f"{BASE_URL}/{'tv' if is_tv else 'movie'}/{new_id}?api_key={API_KEY}&language=tr-TR&append_to_response=credits"
+                            
+                            final_resp = requests.get(final_url, timeout=10)
+                            if final_resp.status_code == 200:
+                                parsed = _parse_tmdb_response(final_resp.json(), is_tv=is_tv)
+                                if is_title_match(title, parsed['title']) or is_title_match(q_title, parsed['title']):
+                                    return parsed
     except Exception as e:
-        print(f"TMDb ID {tmdb_id} çekilirken API Hatası: {e}")
+        print(f"TMDb API Hatası (ID: {tmdb_id}, Title: {title}): {e}")
     return None
 
 def search_tmdb_movies(query):
@@ -70,7 +134,7 @@ def run_enrichment():
         print("Uyarı: API rate-limit'e (hız sınırına) takılmamak için bu işlem biraz vakit alacaktır. Arka planda çalışmaya bırakabilirsin.")
         
         for index, movie in enumerate(movies_to_update, 1):
-            data = fetch_movie_details(movie.tmdb_id)
+            data = fetch_movie_details(movie.tmdb_id, title=movie.title, year=movie.year)
             if data:
                 movie.description = data['description']
                 movie.poster_url = data['poster_url']

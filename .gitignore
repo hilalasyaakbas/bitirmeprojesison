@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+
+# Virtual Environment
+venv/
+ENV/
+env/
+.env
+
+# Database
+app.db
+*.sqlite
+*.sqlite3
+
+# IDEs
+.vscode/
+.idea/
+.DS_Store
+
+# Jupyter Notebooks checkpoint
+.ipynb_checkpoints/

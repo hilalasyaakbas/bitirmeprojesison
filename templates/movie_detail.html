@@ -6,11 +6,13 @@
 <section class="movie-detail">
   <div class="container">
     <figure class="movie-detail-banner">
-      <img
-      src="{{ movie.poster_url if movie.poster_url and movie.poster_url != 'None' else 'https://placehold.co/400x600/141423/00d4ff?text=Afis+Bekleniyor' }}"
-      alt="{{ movie.title }} movie poster"
-      onerror="this.onerror=null; this.src='https://placehold.co/400x600/141423/00d4ff?text=Afis+Bekleniyor';"
-    >
+      <a href="https://www.themoviedb.org/movie/{{ movie.tmdb_id }}" target="_blank" rel="noreferrer" title="TMDb'de Görüntüle">
+        <img
+          src="{{ movie.poster_url if movie.poster_url and movie.poster_url != 'None' else 'https://placehold.co/400x600/141423/00d4ff?text=Afis+Bekleniyor' }}"
+          alt="{{ movie.title }} movie poster"
+          onerror="this.onerror=null; this.src='https://placehold.co/400x600/141423/00d4ff?text=Afis+Bekleniyor';"
+        >
+      </a>
       <a href="{{ movie.imdb_url or '#' }}" class="play-btn" target="_blank" rel="noreferrer">
         <ion-icon name="open-outline"></ion-icon>
       </a>

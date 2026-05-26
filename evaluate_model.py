@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 
+import joblib
 from surprise import SVD, Dataset, Reader
 from surprise.model_selection import train_test_split
 from surprise.accuracy import rmse
@@ -125,6 +126,9 @@ def evaluate():
         svd_predictions = svd_model.test(testset)
         svd_rmse = rmse(svd_predictions, verbose=False)
 
+        # Eğitilen modeli joblib ile kaydediyoruz. Bu sayede recommend.py içinde tekrar eğitmeye gerek kalmaz.
+        joblib.dump(svd_model, "svd_model.pkl")
+        print("Müjde! SVD Modeli başarıyla svd_model.pkl olarak kaydedildi!")
         # testset Surprise formatında tuple döner: (user_id, movie_id, true_rating)
         test_df = pd.DataFrame([
             {
