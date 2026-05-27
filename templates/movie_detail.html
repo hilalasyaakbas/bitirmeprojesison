@@ -6,15 +6,15 @@
 <section class="movie-detail">
   <div class="container">
     <figure class="movie-detail-banner">
-      <a href="{% if movie.tmdb_id and movie.tmdb_id != 'None' and movie.tmdb_id != 0 %}https://www.themoviedb.org/movie/{{ movie.tmdb_id }}{% else %}https://www.themoviedb.org/search?query={{ movie.title }}{% endif %}" target="_blank" rel="noreferrer" title="TMDb'de Görüntüle">
+      <a href="{% if movie.tmdb_id and movie.tmdb_id != 'None' and movie.tmdb_id != 0 %}https://www.themoviedb.org/movie/{{ movie.tmdb_id }}{% else %}https://www.themoviedb.org/search?query={{ movie.title }}{% endif %}" target="_blank" rel="noreferrer" title="TMDb'de Görüntüle" style="display: block; width: 100%; height: 100%;">
         <img
           src="{{ movie.poster_url if movie.poster_url and movie.poster_url != 'None' else 'https://placehold.co/400x600/141423/00d4ff?text=Afis+Bekleniyor' }}"
           alt="{{ movie.title }} movie poster"
           onerror="this.onerror=null; this.src='https://placehold.co/400x600/141423/00d4ff?text=Afis+Bekleniyor';"
         >
-      </a>
-      <a href="{{ movie.imdb_url or '#' }}" class="play-btn" target="_blank" rel="noreferrer">
-        <ion-icon name="open-outline"></ion-icon>
+        <div class="play-btn">
+          <ion-icon name="open-outline"></ion-icon>
+        </div>
       </a>
     </figure>
 
