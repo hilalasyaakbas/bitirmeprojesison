@@ -1,0 +1,15 @@
+name: Keep Alive
+
+on:
+  schedule:
+    - cron: '*/10 * * * *' # Runs every 10 minutes to keep the server and database 100% awake
+  workflow_dispatch: # Allows manual trigger from GitHub UI
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Render Web Service and Aiven Database
+        run: |
+          echo "Pinging moviesage.onrender.com to keep Render and Aiven awake..."
+          curl -s -o /dev/null -w "%{http_code}" https://moviesage.onrender.com/
