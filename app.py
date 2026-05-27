@@ -42,7 +42,10 @@ def create_app() -> Flask:
     db.init_app(app)
 
     with app.app_context():
-        db.create_all()
+        try:
+            db.create_all()
+        except Exception as e:
+            app.logger.warning(f"Database table check failed on startup (this is normal if DB is lazy): {e}")
 
     @app.before_request
     def load_current_user():
