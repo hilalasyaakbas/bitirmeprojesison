@@ -101,8 +101,20 @@ def create_app() -> Flask:
 
     @app.route("/")
     def home():
-        # MySQL uyumlu sıralama (NULLS LAST yerine otomatik son oylananlar)
-        featured = Movie.query.order_by(Movie.imdb_rating.desc(), Movie.year.desc()).limit(12).all()
+        # Sadece afişi olan, IMDb puanı 7.5 ve üzeri, vizyon yılı >= 1995 olan popüler filmler
+        featured = Movie.query.filter(
+            Movie.imdb_rating >= 7.5,
+            Movie.year >= 1995,
+            Movie.poster_url.isnot(None),
+            ~Movie.poster_url.like('%default-poster%')
+        ).order_by(Movie.imdb_rating.desc(), Movie.year.desc()).limit(12).all()
+        
+        # Fallback (Eğer henüz zenginleştirme tamamlanmadıysa ve yeterli film dönmezse, genel popülerleri getir)
+        if len(featured) < 12:
+            featured = Movie.query.filter(
+                Movie.poster_url.isnot(None)
+            ).order_by(Movie.imdb_rating.desc(), Movie.year.desc()).limit(12).all()
+            
         ensure_movies_enriched(featured)
         return render_template("home.html", featured_movies=featured)
 
@@ -112,25 +124,46 @@ def create_app() -> Flask:
         if not query:
             return render_template("search.html", movies=[], query="")
 
-        # --- AKILLI ARAMA MOTORU GÜNCELLEMESİ ---
-        # 1. Kullanıcının aramasındaki boşluk ve tireleri temizle
-        clean_query = query.replace("-", "").replace(" ", "")
+        # --- AKILLI VE YAZIM TOLERANSLI ARAMA MOTORU GÜNCELLEMESİ ---
+        # 1. Kullanıcının aramasındaki boşluk, tire ve küçük harf normalizasyonunu yap
+        clean_query = query.replace("-", "").replace(" ", "").lower()
+        
+        # Türkçe karakterleri İngilizce karşılıklarına dönüştür
+        tr_map = str.maketrans("çğıöşü", "cgiosu")
+        eng_query = clean_query.translate(tr_map)
+        
+        # Çeşitli yazım ve harf hatalı arama kombinasyonlarını üretelim:
+        # e -> i, i -> e vokal kaymaları ve c <-> s, ş <-> s vb.
+        queries_set = {clean_query, eng_query}
+        for q_var in list(queries_set):
+            queries_set.add(q_var.replace("c", "s"))
+            queries_set.add(q_var.replace("s", "c"))
+            queries_set.add(q_var.replace("e", "i"))
+            queries_set.add(q_var.replace("i", "e"))
+            queries_set.add(q_var.replace("sh", "s"))
+            queries_set.add(q_var.replace("ş", "s"))
+            queries_set.add(q_var.replace("cinder", "sinder"))
+            queries_set.add(q_var.replace("sinder", "cinder"))
+            
+        queries_list = list(filter(None, queries_set))
 
-        # 2. TMDb API üzerinden çok dilli (Türkçe & Orijinal Ad) arama yapıp eşleşen ID'leri al
+        # 2. TMDb API üzerinden çok dilli (Türkçe & Orijinal İngilizce Adı) arama yapıp eşleşen ID'leri al
         from imdb_service import search_tmdb_movies
         tmdb_ids = search_tmdb_movies(query)
 
-        # 3. Kendi veritabanımızda metin eşleştirme VE TMDb'den gelen eşleşmeleri birleştir
-        movies = Movie.query.filter(
-            or_(
-                # Kendi veritabanımızdaki İngilizce/Türkçe isimler
-                func.replace(func.replace(Movie.title, "-", ""), " ", "").ilike(f"%{clean_query}%"),
-                # Türler içinde ara
-                Movie.genres.ilike(f"%{query}%"),
-                # TMDb yapay zekasından gelen kesin eşleşmeler!
-                Movie.tmdb_id.in_(tmdb_ids) if tmdb_ids else False
-            )
-        ).limit(30).all()
+        # 3. Kendi veritabanımızda hem normalizasyonlu hem de fuzzy eşleştirme yaparak ara
+        conditions = [
+            Movie.genres.ilike(f"%{query}%")
+        ]
+        if tmdb_ids:
+            conditions.append(Movie.tmdb_id.in_(tmdb_ids))
+            
+        for q_var in queries_list:
+            conditions.append(func.replace(func.replace(func.lower(Movie.title), "-", ""), " ", "").ilike(f"%{q_var}%"))
+            conditions.append(func.replace(func.replace(func.replace(func.lower(Movie.title), "-", ""), " ", ""), "c", "s").ilike(f"%{q_var}%"))
+            conditions.append(func.replace(func.replace(func.replace(func.lower(Movie.title), "-", ""), " ", ""), "e", "i").ilike(f"%{q_var}%"))
+
+        movies = Movie.query.filter(or_(*conditions)).limit(30).all()
         
         ensure_movies_enriched(movies)
         
@@ -143,12 +176,31 @@ def create_app() -> Flask:
     @app.route("/rate/<int:movie_id>", methods=["POST"])
     def rate_movie(movie_id):
         user = require_user()
-        if not user: return redirect(url_for("kullanici_girisi"))
+        if not user: 
+            if request.is_json:
+                return {"status": "error", "message": "Lütfen giriş yapın"}, 401
+            return redirect(url_for("kullanici_girisi"))
         
-        score = request.form.get("score")
+        # AJAX (JSON) veya normal form verisini al
+        if request.is_json:
+            data = request.get_json() or {}
+            score = data.get("score")
+        else:
+            score = request.form.get("score")
+            
         if score:
             save_rating(user.id, movie_id, float(score))
+            if request.is_json:
+                return {
+                    "status": "success", 
+                    "message": "Puan başarıyla kaydedildi!", 
+                    "score": score,
+                    "rated_count": len(user.ratings)
+                }
             flash("Puanınız kaydedildi!", "success")
+        else:
+            if request.is_json:
+                return {"status": "error", "message": "Geçersiz puan"}, 400
         
         return redirect(request.referrer or url_for("home"))
 
@@ -197,6 +249,9 @@ def create_app() -> Flask:
 
         selected_genre = request.args.get("genre", "")
         search_query = request.args.get("q", "").strip()
+        
+        # Dinamik Limit ("Daha Fazla Göster" butonu için)
+        limit = request.args.get("limit", 21, type=int)
 
         if request.method == "POST":
             for key, value in request.form.items():
@@ -209,49 +264,91 @@ def create_app() -> Flask:
                 db.session.commit()
                 return redirect(url_for("kisisel_film_onerileri"))
             
-            return redirect(url_for("on_degerlendirme_puanlamasi", genre=selected_genre, q=search_query))
+            return redirect(url_for("on_degerlendirme_puanlamasi", genre=selected_genre, q=search_query, limit=limit))
 
         query = Movie.query
+        
+        # Oylama ekranında sadece ve sadece vizyon yılı >= 1995, IMDb >= 6.5 olan popüler filmleri tercih et (bilinirlik açısından)
+        # Ayrıca afişi olmayan filmleri ele!
+        base_filter = Movie.query.filter(
+            Movie.year >= 1995,
+            Movie.imdb_rating >= 6.5,
+            Movie.poster_url.isnot(None),
+            ~Movie.poster_url.like('%default-poster%')
+        )
+
         if search_query:
             # Akıllı Arama: Hem yerel veritabanı hem de TMDb eşleşmesi
-            clean_query = search_query.replace("-", "").replace(" ", "")
+            # Dil ve yazım toleransı normalizasyonu (Cindirella/Sindirella/Cinderella eşleşmesi için)
+            clean_query = search_query.replace("-", "").replace(" ", "").lower()
+            
+            tr_map = str.maketrans("çğıöşü", "cgiosu")
+            eng_query = clean_query.translate(tr_map)
+            
+            queries_set = {clean_query, eng_query}
+            for q_var in list(queries_set):
+                queries_set.add(q_var.replace("c", "s"))
+                queries_set.add(q_var.replace("s", "c"))
+                queries_set.add(q_var.replace("e", "i"))
+                queries_set.add(q_var.replace("i", "e"))
+                queries_set.add(q_var.replace("sh", "s"))
+                queries_set.add(q_var.replace("ş", "s"))
+                queries_set.add(q_var.replace("cinder", "sinder"))
+                queries_set.add(q_var.replace("sinder", "cinder"))
+                
+            queries_list = list(filter(None, queries_set))
+            
             from imdb_service import search_tmdb_movies
             tmdb_ids = search_tmdb_movies(search_query)
             
-            query = query.filter(
-                or_(
-                    func.replace(func.replace(Movie.title, "-", ""), " ", "").ilike(f"%{clean_query}%"),
-                    Movie.tmdb_id.in_(tmdb_ids) if tmdb_ids else False
-                )
-            )
-            movies_to_rate = query.order_by(Movie.imdb_rating.desc()).limit(21).all()
+            conditions = []
+            if tmdb_ids:
+                conditions.append(Movie.tmdb_id.in_(tmdb_ids))
+                
+            for q_var in queries_list:
+                conditions.append(func.replace(func.replace(func.lower(Movie.title), "-", ""), " ", "").ilike(f"%{q_var}%"))
+                conditions.append(func.replace(func.replace(func.replace(func.lower(Movie.title), "-", ""), " ", ""), "c", "s").ilike(f"%{q_var}%"))
+                conditions.append(func.replace(func.replace(func.replace(func.lower(Movie.title), "-", ""), " ", ""), "e", "i").ilike(f"%{q_var}%"))
+            
+            # Arama yapıldığında, kullanıcının aradığı filmi kesin bulabilmesi için yıl sınırını esnetiyoruz
+            movies_to_rate = Movie.query.filter(or_(*conditions)).order_by(Movie.imdb_rating.desc()).limit(limit).all()
         
         elif selected_genre:
-            query = query.filter(Movie.genres.ilike(f"%{selected_genre}%"))
-            # Sadece kategori seçildiyse, o kategorinin en yüksek puanlılarını getir (çok bilinmeyenler çıkabilir ama kategoriye özeldir)
-            movies_to_rate = query.order_by(Movie.imdb_rating.desc()).limit(21).all()
+            # Kategori seçildiyse: modern ve yüksek puanlı filmleri filtrele
+            query = base_filter.filter(Movie.genres.ilike(f"%{selected_genre}%"))
+            movies_to_rate = query.order_by(Movie.imdb_rating.desc()).limit(limit).all()
+            
+            # Fallback (Eğer o kategoride çok az popüler modern film varsa, yıl filtresini 1990'a çekerek tekrar dene)
+            if len(movies_to_rate) < 10:
+                query = Movie.query.filter(Movie.year >= 1990, Movie.genres.ilike(f"%{selected_genre}%"))
+                movies_to_rate = query.order_by(Movie.imdb_rating.desc()).limit(limit).all()
             
         else:
             # HİÇBİR ARAMA/KATEGORİ YOKSA (İLK AÇILIŞ):
             # Kullanıcının kesinlikle bileceği Kült Klasikler ve Popüler Modern Filmlerin MovieLens ID'leri:
-            # (Inception, Matrix, Interstellar, Godfather, Pulp Fiction, Dark Knight, Avengers, Forrest Gump vb.)
+            # (Inception, Matrix, Interstellar, Godfather, Pulp Fiction, Dark Knight, Avengers, Forrest Gump, Titanic, Parasite, Joker vb.)
             popular_cult_ids = [
                 1, 296, 318, 356, 480, 527, 589, 858, 1196, 2571, 2959, 
-                4993, 5952, 7153, 58559, 79132, 109487, 122886, 134130, 89745, 122904
+                4993, 5952, 7153, 58559, 79132, 109487, 122886, 134130, 89745, 122904,
+                27205, 496243, 680, 155, 13, 597 # Eklenen popüler filmler
             ]
-            query = query.filter(Movie.movielens_id.in_(popular_cult_ids))
+            query = Movie.query.filter(Movie.movielens_id.in_(popular_cult_ids))
             movies_to_rate = query.all()
             
         ensure_movies_enriched(movies_to_rate)
                               
         genres = ["Action", "Adventure", "Animation", "Comedy", "Drama", "Fantasy", "Sci-Fi", "Romance"]
         
+        user_ratings = {r.movie_id: r.score for r in user.ratings}
+        
         return render_template("cold_start.html", 
                                movies=movies_to_rate, 
                                genres=genres, 
                                selected_genre=selected_genre, 
                                search_query=search_query,
-                               rated_count=len(user.ratings))
+                               rated_count=len(user.ratings),
+                               user_ratings=user_ratings,
+                               limit=limit)
 
     @app.route("/oneriler")
     def kisisel_film_onerileri():

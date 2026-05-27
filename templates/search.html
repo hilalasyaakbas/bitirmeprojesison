@@ -1,5 +1,3 @@
-
-<!DOCTYPE html>
 {% extends "base.html" %}
 
 {% block title %}Find Movie | Movie Sage{% endblock %}
@@ -19,18 +17,19 @@
 
     <ul class="movies-list">
       {% for movie in movies %}
+      {% set current_score = user_ratings.get(movie.id)|int if user_ratings and user_ratings.get(movie.id) else 0 %}
       <li>
         <div class="movie-card">
           <a href="{{ url_for('movie_detail', movie_id=movie.id) }}">
             <figure class="card-banner" style="border-radius: 15px; overflow: hidden;">
-              <img src="{{ movie.poster_url }}" alt="{{ movie.title }} poster" onerror="this.src='/assets/images/movie-1.png'">
+              <img src="{{ movie.poster_url }}" alt="{{ movie.title }} poster" onerror="this.src='/assets/images/default-poster.svg'">
             </figure>
           </a>
           <div class="title-wrapper">
             <a href="{{ url_for('movie_detail', movie_id=movie.id) }}">
               <h3 class="card-title">{{ movie.title }}</h3>
             </a>
-            <time datetime="{{ movie.year }}">{{ movie.year }}</time>
+            <time datetime="{{ movie.year }}">{{ movie.year or 'Bilinmiyor' }}</time>
           </div>
           
           <div class="card-meta">
@@ -45,10 +44,10 @@
           <form method="post" action="{{ url_for('rate_movie', movie_id=movie.id) }}" class="custom-form search-card-form" style="margin-top: 15px;">
             <input type="hidden" name="next_url" value="{{ request.url }}">
             <div style="display: flex; gap: 5px;">
-                <select class="input-field" name="score" required style="padding: 5px; font-size: 12px;">
-                  <option value="">Puan</option>
+                <select class="input-field" name="rating_{{ movie.id }}" required style="padding: 5px; font-size: 12px; transition: border-color 0.2s;">
+                  <option value="">Puan Seç</option>
                   {% for score in range(1, 11) %}
-                  <option value="{{ score }}" {% if user_ratings and user_ratings.get(movie.id) == score %}selected{% endif %}>{{ score }}</option>
+                  <option value="{{ score }}" {% if current_score == score %}selected{% endif %}>{{ score }}</option>
                   {% endfor %}
                 </select>
                 <button type="submit" class="btn btn-primary" style="padding: 5px 15px; font-size: 12px;">OK</button>
@@ -63,4 +62,52 @@
     </ul>
   </div>
 </section>
+
+<!-- Anlık AJAX Puanlama Kaydedici -->
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const selects = document.querySelectorAll("select[name^='rating_']");
+    selects.forEach(select => {
+        // Form submit butonunu devre dışı bırakıp otomatik AJAX ile göndereceğiz
+        const form = select.closest("form");
+        if (form) {
+            const btn = form.querySelector("button[type='submit']");
+            if (btn) btn.style.display = "none"; // OK butonunu gizle (artık otomatik kaydoluyor!)
+            
+            form.addEventListener("submit", function(e) {
+                e.preventDefault(); // Yanlışlıkla form submit edilirse engelle
+            });
+        }
+
+        select.addEventListener("change", function() {
+            const movieId = this.name.split("_")[1];
+            const score = this.value;
+            
+            if (!score) return;
+            
+            this.style.borderColor = "#6366f1";
+            
+            fetch(`/rate/${movieId}`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ score: parseFloat(score) })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === "success") {
+                    this.style.borderColor = "#22c55e"; // Başarılı
+                } else {
+                    this.style.borderColor = "#ef4444"; // Hata
+                }
+            })
+            .catch(err => {
+                this.style.borderColor = "#ef4444";
+                console.error("Arama AJAX Puanlama Hatası:", err);
+            });
+        });
+    });
+});
+</script>
 {% endblock %}

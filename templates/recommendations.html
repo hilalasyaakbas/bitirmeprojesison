@@ -14,12 +14,14 @@
       <div class="glass-panel" style="display: flex; flex-wrap: wrap; gap: 50px; padding: 40px; align-items: center; background: rgba(20, 20, 35, 0.8);">
         
         <!-- Net ve Düzgün Oranlı Poster -->
-        <figure class="card-banner" style="flex: 0 0 280px; max-width: 280px; border-radius: 16px; box-shadow: 0 15px 40px rgba(0,0,0,0.6); overflow: hidden; margin: 0 auto;">
-          <img src="{{ top_movie.poster_url if top_movie.poster_url else 'https://placehold.co/400x600/141423/00d4ff?text=Afis+Bekleniyor' }}" 
-               alt="{{ top_movie.title }}" 
-               style="width: 100%; height: auto; display: block; object-fit: cover; aspect-ratio: 2/3;" 
-               onerror="this.onerror=null; this.src='https://placehold.co/400x600/141423/00d4ff?text=Afis+Bekleniyor';">
-        </figure>
+        <a href="https://www.themoviedb.org/movie/{{ top_movie.tmdb_id }}" target="_blank" style="display: block; width: 280px; margin: 0 auto;">
+          <figure class="card-banner" style="border-radius: 16px; box-shadow: 0 15px 40px rgba(0,0,0,0.6); overflow: hidden;">
+            <img src="{{ top_movie.poster_url if top_movie.poster_url else 'https://placehold.co/400x600/141423/00d4ff?text=Afis+Bekleniyor' }}" 
+                 alt="{{ top_movie.title }}" 
+                 style="width: 100%; height: auto; display: block; object-fit: cover; aspect-ratio: 2/3;" 
+                 onerror="this.onerror=null; this.src='https://placehold.co/400x600/141423/00d4ff?text=Afis+Bekleniyor';">
+          </figure>
+        </a>
         
         <!-- İçerik -->
         <div class="top-match-content" style="flex: 1; min-width: 300px;">
@@ -53,7 +55,7 @@
       <div class="recommendation-carousel" style="gap: 30px;">
         {% for movie in recommended_movies[1:6] %}
         <div class="movie-card carousel-item" style="min-width: 220px; max-width: 220px;">
-          <a href="{{ url_for('movie_detail', movie_id=movie.id) }}">
+          <a href="https://www.themoviedb.org/movie/{{ movie.tmdb_id }}" target="_blank">
             <figure class="card-banner" style="border-radius: 12px; box-shadow: 0 10px 20px rgba(0,0,0,0.4);">
               <img src="{{ movie.poster_url if movie.poster_url and movie.poster_url != 'None' else 'https://placehold.co/400x600/141423/00d4ff?text=Afis+Bekleniyor' }}" alt="{{ movie.title }}" onerror="this.onerror=null; this.src='https://placehold.co/400x600/141423/00d4ff?text=Afis+Bekleniyor';">
             </figure>
@@ -82,7 +84,7 @@
         {% for movie in recommended_movies[6:] %}
         <li>
           <div class="movie-card">
-            <a href="{{ url_for('movie_detail', movie_id=movie.id) }}">
+            <a href="https://www.themoviedb.org/movie/{{ movie.tmdb_id }}" target="_blank">
               <figure class="card-banner" style="border-radius: 12px; box-shadow: 0 10px 20px rgba(0,0,0,0.4);">
                 <img src="{{ movie.poster_url if movie.poster_url and movie.poster_url != 'None' else 'https://placehold.co/400x600/141423/00d4ff?text=Afis+Bekleniyor' }}" alt="{{ movie.title }}" onerror="this.onerror=null; this.src='https://placehold.co/400x600/141423/00d4ff?text=Afis+Bekleniyor';">
               </figure>

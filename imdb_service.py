@@ -22,9 +22,17 @@ def is_title_match(original_title, tmdb_title):
     t2 = normalize_title(tmdb_title).lower()
     if not t1 or not t2: return False
     if t1 in t2 or t2 in t1: return True
-    w1 = set(w for w in t1.split() if len(w) > 3)
-    w2 = set(w for w in t2.split() if len(w) > 3)
+    
+    # Türkçe harf normalizasyonu ve ses uyumu (c <-> s, ş <-> s, ç <-> c, e <-> i vb.)
+    tr_map = str.maketrans("çğıöşü", "cgiosu")
+    t1_tr = t1.translate(tr_map).replace("c", "s").replace("e", "i")
+    t2_tr = t2.translate(tr_map).replace("c", "s").replace("e", "i")
+    if t1_tr in t2_tr or t2_tr in t1_tr: return True
+    
+    w1 = set(w for w in t1.split() if len(w) > 2)
+    w2 = set(w for w in t2.split() if len(w) > 2)
     return len(w1.intersection(w2)) > 0
+
 
 def _parse_tmdb_response(details, is_tv=False):
     crew = details.get('credits', {}).get('crew', [])

@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 750" width="100%" height="100%">
+  <defs>
+    <!-- Modern koyu arka plan gradyanı -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e1b4b" /> <!-- Gece mavisi -->
+      <stop offset="100%" stop-color="#0f172a" /> <!-- Koyu lacivert -->
+    </linearGradient>
+    <!-- Parlama efekti -->
+    <linearGradient id="glowGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.15" />
+      <stop offset="100%" stop-color="#3b82f6" stop-opacity="0" />
+    </linearGradient>
+  </defs>
+
+  <!-- Arka Plan -->
+  <rect width="500" height="750" fill="url(#bgGrad)" rx="20" />
+  
+  <!-- Estetik Parlama Halkaları -->
+  <circle cx="250" cy="300" r="180" fill="url(#glowGrad)" />
+
+  <!-- Şık Sinema/Film Rulosu İkonu -->
+  <g transform="translate(190, 240) scale(1.5)" fill="none" stroke="#6366f1" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Kamera gövdesi -->
+    <rect x="5" y="25" width="70" height="45" rx="8" stroke="#818cf8" stroke-width="5" />
+    <!-- Objektif -->
+    <path d="M75 37 L90 27 L90 67 L75 57 Z" fill="#818cf8" opacity="0.3" stroke="#818cf8" stroke-width="4" />
+    <!-- Üst makaralar -->
+    <circle cx="25" cy="12" r="12" stroke="#6366f1" stroke-width="4" />
+    <circle cx="25" cy="12" r="4" fill="#6366f1" />
+    
+    <circle cx="55" cy="12" r="12" stroke="#6366f1" stroke-width="4" />
+    <circle cx="55" cy="12" r="4" fill="#6366f1" />
+    
+    <!-- Dekoratif film şeridi çizgileri -->
+    <path d="M25 12 L55 12" stroke="#6366f1" stroke-dasharray="2,2" />
+  </g>
+
+  <!-- Alt Bilgi ve Yazılar -->
+  <text x="250" y="440" font-family="'Outfit', 'Inter', 'Segoe UI', sans-serif" font-size="22" font-weight="700" fill="#a5b4fc" text-anchor="middle" letter-spacing="2">
+    FİLM SAGE
+  </text>
+  
+  <text x="250" y="480" font-family="'Outfit', 'Inter', 'Segoe UI', sans-serif" font-size="16" font-weight="500" fill="#64748b" text-anchor="middle" letter-spacing="1">
+    GÖRSEL BULUNAMADI
+  </text>
+
+  <!-- Dekoratif Kenarlık Çerçevesi -->
+  <rect x="15" y="15" width="470" height="720" rx="15" fill="none" stroke="#312e81" stroke-width="2" stroke-dasharray="8,6" opacity="0.5" />
+</svg>

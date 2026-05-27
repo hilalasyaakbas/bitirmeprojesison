@@ -126,6 +126,14 @@ class HybridRecommender:
         user_ratings = self.session.query(Rating).filter_by(user_id=user_id).all()
         user_movie_ids = [rating.movie_id for rating in user_ratings]
 
+        # 1995 ve sonrası modern filmleri VEYA eski dev kült klasikleri (IMDb >= 8.2) filtrele. Afişi eksik olanları önerme!
+        allowed_movies = self.session.query(Movie.id).filter(
+            ((Movie.year >= 1995) | ((Movie.year < 1995) & (Movie.imdb_rating >= 8.2))),
+            Movie.poster_url.isnot(None),
+            ~Movie.poster_url.like('%default-poster%')
+        ).all()
+        allowed_ids = {m[0] for m in allowed_movies}
+
         effective_alpha = self._get_effective_alpha(len(user_ratings))
 
         # 1-10 rating ölçeğinde 7 ve üzeri beğenilmiş kabul edilir.
@@ -156,6 +164,10 @@ class HybridRecommender:
             movie_id = int(row["id"])
 
             if movie_id in user_movie_ids:
+                continue
+
+            # Kaliteli ve modern/kült film filtresinden geçir
+            if movie_id not in allowed_ids:
                 continue
 
             # SVD tahmini 1-10 aralığındadır; 0-1 aralığına normalize edilir.

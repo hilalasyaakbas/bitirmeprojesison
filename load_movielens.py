@@ -29,26 +29,20 @@ def load_data():
         # tmdbId'si boş olan hatalı satırları atlıyoruz
         df = df.dropna(subset=['tmdbId'])
 
-        print(f"4. Toplam {len(df)} film MySQL'e aktarılıyor (Bu işlem 30-40 saniye sürebilir)...")
+        print(f"4. Toplam {len(df)} film için toplu eşlemeler hazırlanıyor...")
         
+        movie_mappings = []
         for index, row in df.iterrows():
-            movie = Movie(
-                title=row['title'],
-                # Türleri listelemek için formata uygun hale getiriyoruz (Action|Adventure -> Action Adventure)
-                genres=row['genres'].replace('|', ' '), 
-                movielens_id=int(row['movieId']),
-                tmdb_id=int(row['tmdbId']),
-                # IMDb ID formatını düzeltiyoruz (Örn: 114709 -> tt0114709)
-                imdb_id=f"tt{str(int(row['imdbId'])).zfill(7)}" 
-            )
-            db.session.add(movie)
+            movie_mappings.append({
+                "title": row['title'],
+                "genres": row['genres'].replace('|', ' '), 
+                "movielens_id": int(row['movieId']),
+                "tmdb_id": int(row['tmdbId']),
+                "imdb_id": f"tt{str(int(row['imdbId'])).zfill(7)}" 
+            })
 
-            # RAM'i yormamak için her 1000 filmde bir veritabanına kalıcı kayıt yapıyoruz
-            if index > 0 and index % 1000 == 0:
-                db.session.commit()
-                print(f"   - {index} film başarıyla eklendi...")
-
-        # Kalan son filmleri de kaydediyoruz
+        print("5. Filmler toplu olarak bulut veritabanına aktarılıyor (Bulk Insert - 2-3 saniye sürecektir)...")
+        db.session.bulk_insert_mappings(Movie, movie_mappings)
         db.session.commit()
         print("🎉 TEBRİKLER! Tüm MovieLens verileri başarıyla MySQL'e yüklendi.")
 
