@@ -215,8 +215,10 @@ def create_app() -> Flask:
 
             if not username or not email or not password:
                 flash("Lütfen tüm alanları doldurun.", "error")
-            elif User.query.filter((User.username == username) | (User.email == email)).first():
-                flash("Bu kullanıcı adı veya e-posta zaten kullanımda.", "error")
+            elif User.query.filter_by(username=username).first():
+                flash("Bu kullanıcı adı zaten alınmış.", "error")
+            elif User.query.filter_by(email=email).first():
+                flash("Bu e-posta adresiyle zaten kayıtlı bir hesap var.", "error")
             else:
                 user = User(username=username, email=email, password_hash=generate_password_hash(password))
                 db.session.add(user)
@@ -324,6 +326,24 @@ def create_app() -> Flask:
             if len(movies_to_rate) < 10:
                 query = Movie.query.filter(Movie.year >= 1990, Movie.genres.ilike(f"%{selected_genre}%"))
                 movies_to_rate = query.order_by(Movie.imdb_rating.desc()).limit(limit).all()
+                
+            # Animasyon kategorisinde Disney/Pixar/Dreamworks popüler başyapıtlarını öne çıkar
+            if selected_genre == "Animation":
+                disney_pixar_keywords = [
+                    "toy story", "lion king", "finding nemo", "monsters, inc", "shrek", 
+                    "ice age", "aladdin", "beauty and the beast", "frozen", "up (", "wall-e", 
+                    "ratatouille", "incredibles", "despicable me", "kung fu panda", 
+                    "how to train your dragon", "madagascar", "moana", "zootopia", "coco", 
+                    "tangled", "finding dory", "cars (", "mulan", "hercules", "tarzan", 
+                    "little mermaid", "spirited away"
+                ]
+                def get_animation_priority(m):
+                    title_lower = m.title.lower()
+                    for kw in disney_pixar_keywords:
+                        if kw in title_lower:
+                            return (0, -m.imdb_rating if m.imdb_rating else 0)
+                    return (1, -m.imdb_rating if m.imdb_rating else 0)
+                movies_to_rate = sorted(movies_to_rate, key=get_animation_priority)
             
         else:
             # HİÇBİR ARAMA/KATEGORİ YOKSA (İLK AÇILIŞ):
@@ -334,8 +354,21 @@ def create_app() -> Flask:
                 4993, 5952, 7153, 58559, 79132, 109487, 122886, 134130, 89745, 122904,
                 27205, 496243, 680, 155, 13, 597 # Eklenen popüler filmler
             ]
-            query = Movie.query.filter(Movie.movielens_id.in_(popular_cult_ids))
-            movies_to_rate = query.all()
+            movies_to_rate = Movie.query.filter(Movie.movielens_id.in_(popular_cult_ids)).all()
+            
+            # Eğer limit popüler kült film sayısından büyükse (Daha fazla film göster'e tıklandıysa), 
+            # veritabanından diğer popüler modern filmleri ekle!
+            if len(movies_to_rate) < limit:
+                additional_needed = limit - len(movies_to_rate)
+                already_ids = [m.id for m in movies_to_rate]
+                additional_movies = Movie.query.filter(
+                    Movie.year >= 1995,
+                    Movie.imdb_rating >= 7.0,
+                    Movie.poster_url.isnot(None),
+                    ~Movie.poster_url.like('%default-poster%'),
+                    ~Movie.id.in_(already_ids) if already_ids else True
+                ).order_by(Movie.imdb_rating.desc()).limit(additional_needed).all()
+                movies_to_rate.extend(additional_movies)
             
         ensure_movies_enriched(movies_to_rate)
                               
