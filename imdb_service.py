@@ -90,11 +90,6 @@ def fetch_movie_details(tmdb_id, title=None, year=None):
         if response.status_code == 404 and title:
             clean_title = normalize_title(title)
             search_queries = [(clean_title, year), (clean_title, None)]
-            
-            if ":" in clean_title:
-                search_queries.append((clean_title.split(":")[0].strip(), None))
-            elif "-" in clean_title:
-                search_queries.append((clean_title.split("-")[0].strip(), None))
 
             for q_title, q_year in search_queries:
                 if not q_title: continue
