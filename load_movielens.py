@@ -32,13 +32,21 @@ def load_data():
         print(f"4. Toplam {len(df)} film için toplu eşlemeler hazırlanıyor...")
         
         movie_mappings = []
+        import re
         for index, row in df.iterrows():
+            title = row['title']
+            year = None
+            match = re.search(r'\((\d{4})\)', title)
+            if match:
+                year = int(match.group(1))
+                
             movie_mappings.append({
-                "title": row['title'],
+                "title": title,
                 "genres": row['genres'].replace('|', ' '), 
                 "movielens_id": int(row['movieId']),
                 "tmdb_id": int(row['tmdbId']),
-                "imdb_id": f"tt{str(int(row['imdbId'])).zfill(7)}" 
+                "imdb_id": f"tt{str(int(row['imdbId'])).zfill(7)}",
+                "year": year
             })
 
         print("5. Filmler toplu olarak bulut veritabanına aktarılıyor (Bulk Insert - 2-3 saniye sürecektir)...")

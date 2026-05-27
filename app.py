@@ -90,6 +90,8 @@ def create_app() -> Flask:
                     movie.cast = data['cast']
                     movie.duration = data['duration']
                     movie.imdb_rating = data['imdb_rating']
+                    if data.get('year'):
+                        movie.year = data['year']
                     updated = True
         
         if updated:

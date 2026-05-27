@@ -52,6 +52,15 @@ def _parse_tmdb_response(details, is_tv=False):
     
     poster_path = details.get('poster_path')
     
+    # Vizyon tarihi yılı ayıklama
+    release_date = details.get('release_date') or details.get('first_air_date', '')
+    year = None
+    if release_date and len(release_date) >= 4:
+        try:
+            year = int(release_date[:4])
+        except:
+            pass
+            
     return {
         "title": details.get('title') or details.get('name', ''),
         "description": details.get('overview', 'Açıklama bulunamadı.') or 'Açıklama bulunamadı.',
@@ -59,7 +68,8 @@ def _parse_tmdb_response(details, is_tv=False):
         "director": director,
         "cast": cast_names,
         "duration": duration,
-        "imdb_rating": details.get('vote_average', 0.0)
+        "imdb_rating": details.get('vote_average', 0.0),
+        "year": year
     }
 
 def fetch_movie_details(tmdb_id, title=None, year=None):
@@ -156,6 +166,8 @@ def run_enrichment():
                 movie.cast = data['cast']
                 movie.duration = data['duration']
                 movie.imdb_rating = data['imdb_rating']
+                if data.get('year'):
+                    movie.year = data['year']
             
             # RAM'i korumak ve verileri güvene almak için her 50 filmde bir kaydet (commit)
             if index % 50 == 0:
