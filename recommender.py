@@ -126,12 +126,40 @@ class HybridRecommender:
         user_ratings = self.session.query(Rating).filter_by(user_id=user_id).all()
         user_movie_ids = [rating.movie_id for rating in user_ratings]
 
-        # 1995 ve sonrası modern filmleri VEYA eski dev kült klasikleri (IMDb >= 8.2) filtrele. Afişi eksik olanları önerme!
-        allowed_movies = self.session.query(Movie.id).filter(
-            ((Movie.year >= 1995) | ((Movie.year < 1995) & (Movie.imdb_rating >= 8.2))),
-            Movie.poster_url.isnot(None),
-            ~Movie.poster_url.like('%default-poster%')
-        ).all()
+        # Kullanıcının puanladığı filmlerin türlerini analiz et (Tür Baskınlığı Filtresi için)
+        rated_movies = self.session.query(Movie).filter(Movie.id.in_(user_movie_ids)).all() if user_movie_ids else []
+        
+        dominant_genre = None
+        if rated_movies:
+            from collections import Counter
+            genre_counter = Counter()
+            for m in rated_movies:
+                if m.genres:
+                    for g in m.genres.split():
+                        genre_counter[g] += 1
+            if genre_counter:
+                most_common_genre, count = genre_counter.most_common(1)[0]
+                # Eğer kullanıcı oyladığı filmlerin %65'inden fazlasını tek bir türe ait oyladıysa
+                if count / len(rated_movies) >= 0.65:
+                    dominant_genre = most_common_genre
+
+        # 1995 ve sonrası modern filmleri VEYA eski dev efsanevi kült klasikleri (IMDb >= 8.5) filtrele. Afişi eksik olanları önerme!
+        # Eğer baskın bir tür varsa önerilerin tamamını bu baskın türe zorla (Örn: Sadece Animasyon oyladıysa tamamı Animasyon olsun!)
+        if dominant_genre:
+            allowed_movies_query = self.session.query(Movie.id).filter(
+                ((Movie.year >= 1995) | ((Movie.year < 1995) & (Movie.imdb_rating >= 8.5))),
+                Movie.poster_url.isnot(None),
+                ~Movie.poster_url.like('%default-poster%'),
+                Movie.genres.ilike(f"%{dominant_genre}%")
+            )
+        else:
+            allowed_movies_query = self.session.query(Movie.id).filter(
+                ((Movie.year >= 1995) | ((Movie.year < 1995) & (Movie.imdb_rating >= 8.5))),
+                Movie.poster_url.isnot(None),
+                ~Movie.poster_url.like('%default-poster%')
+            )
+            
+        allowed_movies = allowed_movies_query.all()
         allowed_ids = {m[0] for m in allowed_movies}
 
         effective_alpha = self._get_effective_alpha(len(user_ratings))
