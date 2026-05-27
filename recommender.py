@@ -158,6 +158,12 @@ class HybridRecommender:
             cbf_scores = np.zeros(len(self.movies_df))
 
         # 3. Weighted Hybrid Scoring
+        # Performans için IMDb puanlarını tek bir sorguyla önbelleğe alıyoruz
+        movie_imdb_ratings = {
+            m[0]: (m[1] if m[1] else 0.0)
+            for m in self.session.query(Movie.id, Movie.imdb_rating).filter(Movie.id.in_(allowed_ids)).all()
+        }
+
         hybrid_recommendations = []
 
         for idx, row in self.movies_df.iterrows():
@@ -176,7 +182,15 @@ class HybridRecommender:
             # TF-IDF cosine similarity skoru doğal olarak 0-1 aralığındadır.
             cbf_score = cbf_scores[idx]
 
-            final_score = (effective_alpha * cf_score) + ((1 - effective_alpha) * cbf_score)
+            # Filmin IMDb puanını 0-1 arasına normalize ederek 3. ağırlık olarak ekliyoruz
+            imdb_rating = movie_imdb_ratings.get(movie_id, 0.0)
+            imdb_score = imdb_rating / 10.0
+
+            # Kişisel zevk hibrit bazı (%60)
+            hybrid_base = (effective_alpha * cf_score) + ((1 - effective_alpha) * cbf_score)
+
+            # Nihai hibrit skor: %60 kişiselleştirilmiş zevk tahmini, %40 global kalite/popülerlik (IMDb)
+            final_score = (0.6 * hybrid_base) + (0.4 * imdb_score)
 
             hybrid_recommendations.append((movie_id, final_score))
 
